@@ -11,7 +11,6 @@ const app = express();
 // ── Middlewares globales ────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // ── Rutas ────────────────────────────────────────────────────────────
 const API = "/api/";

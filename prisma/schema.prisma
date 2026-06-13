@@ -1,13 +1,267 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
+}
+
+model categoria_producto {
+  id        Int                       @id @default(autoincrement())
+  nombre    String                    @db.VarChar(100)
+  estado    categoria_producto_estado
+  productos productos[]
+}
+
+model categoria_tienda {
+  id      Int                     @id @default(autoincrement())
+  nombre  String                  @db.VarChar(45)
+  estado  categoria_tienda_estado
+  tiendas tiendas[]
+}
+
+model detalle_movimiento {
+  id             Int         @id @default(autoincrement())
+  productos_id   Int
+  movimientos_id Int
+  cantidad       Int
+  costo_unitario Decimal     @db.Decimal(10, 2)
+  movimientos    movimientos @relation(fields: [movimientos_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detalle_entrada_entradas1")
+  productos      productos   @relation(fields: [productos_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detalle_entrada_productos1")
+
+  @@index([movimientos_id], map: "fk_detalle_entrada_entradas1_idx")
+  @@index([productos_id], map: "fk_detalle_entrada_productos1_idx")
+}
+
+model detalle_venta {
+  id           Int       @id @default(autoincrement())
+  ventas_id    Int
+  productos_id Int
+  cantidad     Decimal   @db.Decimal(10, 4)
+  precio_unit  Decimal   @db.Decimal(10, 4)
+  subtotal     Decimal   @db.Decimal(10, 2)
+  productos    productos @relation(fields: [productos_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detalle_venta_productos1")
+  ventas       ventas    @relation(fields: [ventas_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detalle_venta_ventas1")
+
+  @@index([productos_id], map: "fk_detalle_venta_productos1_idx")
+  @@index([ventas_id], map: "fk_detalle_venta_ventas1_idx")
+}
+
+model horarios_atencion {
+  id          Int                          @id @default(autoincrement())
+  dia_semana  horarios_atencion_dia_semana
+  hora_inicio DateTime                     @db.Time(0)
+  hora_fin    DateTime                     @db.Time(0)
+  estado      horarios_atencion_estado
+  tiendas_id  Int
+  tiendas     tiendas                      @relation(fields: [tiendas_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_horarios_atencion_tiendas1")
+
+  @@index([tiendas_id], map: "fk_horarios_atencion_tiendas1_idx")
+}
+
+model log_auditoria {
+  id                 Int      @id @default(autoincrement())
+  timestamp_utc      DateTime @default(now()) @db.Timestamp(0)
+  tipo_evento_accion String   @db.VarChar(45)
+  usuarios_id        Int
+  ip_cliente         String   @db.VarChar(45)
+  recurso_tipo       String   @db.VarChar(45)
+  recurso_id         Int
+  valor_anterior     String?  @db.LongText
+  valor_nuevo        String?  @db.LongText
+  descripcion        String   @db.VarChar(45)
+}
+
+model movimientos {
+  id                 Int                  @id @default(autoincrement())
+  fecha              DateTime             @db.DateTime(0)
+  estado             movimientos_estado
+  tipo               movimientos_tipo
+  motivo             String?              @db.Text
+  proveedores_id     Int?
+  usuarios_id        Int
+  tiendas_id         Int
+  fecha_cancelacion  DateTime?            @db.DateTime(0)
+  detalle_movimiento detalle_movimiento[]
+  proveedores        proveedores?         @relation(fields: [proveedores_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_entradas_proveedores1")
+  tiendas            tiendas              @relation(fields: [tiendas_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimientos_tiendas1")
+  usuarios           usuarios             @relation(fields: [usuarios_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimientos_usuarios1")
+
+  @@index([proveedores_id], map: "fk_entradas_proveedores1_idx")
+  @@index([tiendas_id], map: "fk_movimientos_tiendas1_idx")
+  @@index([usuarios_id], map: "fk_movimientos_usuarios1_idx")
+}
+
+model productos {
+  id                    Int                  @id @default(autoincrement())
+  nombre                String               @db.VarChar(100)
+  precio                Decimal              @db.Decimal(10, 2)
+  descripcion           String?              @db.Text
+  codigo_referencia     String?              @db.VarChar(45)
+  stock_bajo_apartir_de Int                  @default(5)
+  foto                  String?              @db.VarChar(255)
+  stock_actual          Int
+  estado                productos_estado
+  categoria_producto_id Int
+  unidad_medida_id      Int
+  tiendas_id            Int
+  fecha_desactivacion   DateTime?            @db.DateTime(0)
+  detalle_movimiento    detalle_movimiento[]
+  detalle_venta         detalle_venta[]
+  categoria_producto    categoria_producto   @relation(fields: [categoria_producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_productos_categoria_producto1")
+  tiendas               tiendas              @relation(fields: [tiendas_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_productos_tiendas1")
+  unidad_medida         unidad_medida        @relation(fields: [unidad_medida_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_productos_unidad_medida1")
+
+  @@index([categoria_producto_id], map: "fk_productos_categoria_producto1_idx")
+  @@index([tiendas_id], map: "fk_productos_tiendas1_idx")
+  @@index([unidad_medida_id], map: "fk_productos_unidad_medida1_idx")
+}
+
+model proveedores {
+  id          Int                @id
+  nombre      String             @db.VarChar(45)
+  telefono    String             @db.VarChar(45)
+  estado      proveedores_estado
+  movimientos movimientos[]
+}
+
+model roles {
+  id       Int        @id
+  nombre   String     @db.VarChar(100)
+  usuarios usuarios[]
+}
+
+model tiendas {
+  id                  Int                 @id
+  nombre              String              @db.VarChar(45)
+  direccion           String              @db.VarChar(100)
+  longitud            Decimal             @db.Decimal(10, 8)
+  latitud             Decimal             @db.Decimal(10, 8)
+  descripcion         String?             @db.Text
+  logo                String?             @db.VarChar(200)
+  telefono            String?             @db.VarChar(45)
+  estado              tiendas_estado
+  usuarios_id         Int
+  categoria_tienda_id Int
+  on_boarding_paso    String              @db.VarChar(45)
+  horarios_atencion   horarios_atencion[]
+  movimientos         movimientos[]
+  productos           productos[]
+  categoria_tienda    categoria_tienda    @relation(fields: [categoria_tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_tiendas_categoria_tienda1")
+  usuarios            usuarios            @relation(fields: [usuarios_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_tiendas_usuarios1")
+  ventas              ventas[]
+
+  @@index([categoria_tienda_id], map: "fk_tiendas_categoria_tienda1_idx")
+  @@index([usuarios_id], map: "fk_tiendas_usuarios1_idx")
+}
+
+model unidad_medida {
+  id        Int                   @id @default(autoincrement())
+  nombre    String                @db.VarChar(45)
+  estado    unidad_medida_estado?
+  productos productos[]
+}
+
+model usuarios {
+  id          Int             @id @default(autoincrement())
+  nombre      String          @db.VarChar(45)
+  email       String          @db.VarChar(150)
+  password    String          @db.VarChar(250)
+  telefono    String          @db.VarChar(45)
+  estado      usuarios_estado
+  roles_id    Int
+  movimientos movimientos[]
+  tiendas     tiendas[]
+  roles       roles           @relation(fields: [roles_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuarios_roles")
+  ventas      ventas[]
+
+  @@index([roles_id], map: "fk_usuarios_roles_idx")
+}
+
+model ventas {
+  id                 Int             @id @default(autoincrement())
+  fecha              DateTime        @db.DateTime(0)
+  total              Decimal         @db.Decimal(10, 2)
+  estado             ventas_estado
+  usuarios_id        Int
+  tiendas_id         Int
+  motivo_cancelacion String?         @db.Text
+  fecha_cancelacion  DateTime?       @db.DateTime(0)
+  detalle_venta      detalle_venta[]
+  tiendas            tiendas         @relation(fields: [tiendas_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ventas_tiendas1")
+  usuarios           usuarios        @relation(fields: [usuarios_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ventas_usuarios1")
+
+  @@index([tiendas_id], map: "fk_ventas_tiendas1_idx")
+  @@index([usuarios_id], map: "fk_ventas_usuarios1_idx")
+}
+
+enum horarios_atencion_dia_semana {
+  Lunes
+  Martes
+  Mi_rcoles @map("Miércoles")
+  Jueves
+  Viernes
+  S_bado    @map("Sábado")
+  Domingo
+}
+
+enum categoria_producto_estado {
+  Activo
+  Inactivo
+}
+
+enum categoria_tienda_estado {
+  Activo
+  Inactivo
+}
+
+enum movimientos_estado {
+  Activo
+  Cancelada
+}
+
+enum unidad_medida_estado {
+  Activo
+  Inactivo
+}
+
+enum movimientos_tipo {
+  Entrada
+  Salida
+  Ajuste_Entrada @map("Ajuste-Entrada")
+  Ajuste_Salida  @map("Ajuste-Salida")
+}
+
+enum proveedores_estado {
+  Activo
+  Inactivo
+}
+
+enum ventas_estado {
+  Completada
+  Cancelada
+}
+
+enum horarios_atencion_estado {
+  Activo
+  Inactivo
+}
+
+enum usuarios_estado {
+  Activo
+  Inactivo
+}
+
+enum productos_estado {
+  Activo
+  Inactivo
+}
+
+enum tiendas_estado {
+  Activo
+  Inactivo
+  Pendiente
+  Incompleto
+  Rechazado
 }

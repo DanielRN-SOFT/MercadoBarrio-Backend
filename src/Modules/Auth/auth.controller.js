@@ -1,17 +1,17 @@
 import prisma from "../../../prismaClient.js";
 import bcrypt from "bcryptjs";
 import generateToken from "../../helpers/generateToken.js";
-import { usuarios_estado } from "../../../generated/prisma/index.js";
+import { UserStatus } from "../../../generated/prisma/index.js";
 export const authUser = async (req, res) => {
   const { email, password } = req.body;
   console.log(email, password);
-  const user = await prisma.usuarios.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email },
     select: {
       id: true,
-      nombre: true,
+      name: true,
       email: true,
-      roles_id: true,
+      roleId: true,
       password: true,
     },
   });
@@ -20,9 +20,9 @@ export const authUser = async (req, res) => {
 
     res.json({
       id: user.id,
-      nombre: user.nombre,
+      name: user.name,
       email: user.email,
-      roles_id: user.roles_id,
+      roleId: user.roleId,
     });
   } else {
     res.status(401);
@@ -30,28 +30,28 @@ export const authUser = async (req, res) => {
   }
 };
 export const registerUser = async (req, res) => {
-  const { nombre, email, password, telefono } = req.body;
+  const { name, email, password, phone } = req.body;
 
-  const usuario = await prisma.usuarios.findUnique({ where: { email } });
-  if (usuario) {
+  const userApi = await prisma.user.findUnique({ where: { email } });
+  if (userApi) {
     res.status(400);
     throw new Error("El usuario ya existe");
   }
 
-  const rol = await prisma.roles.findFirst({ where: { nombre: "Tendero" } });
+  const rol = await prisma.role.findFirst({ where: { name: "Tendero" } });
   if (!rol) {
     res.status(500);
     throw new Error("Rol 'Tendero' no encontrado");
   }
 
-  const user = await prisma.usuarios.create({
+  const user = await prisma.user.create({
     data: {
-      nombre,
+      name,
       email,
       password: bcrypt.hashSync(password, 10),
-      telefono,
-      estado: "Activo",
-      roles_id: rol.id,
+      phone,
+      status: "Activo",
+      roleId: rol.id,
     },
   });
 
@@ -94,7 +94,7 @@ export const getUserProfile = (req, res) => {
 };
 
 export const updateUserProfile = async (req, res) => {
-  const user = await prisma.usuarios.findUnique(req.user.id);
+  const user = await prisma.user.findUnique(req.user.id);
   if (user) {
     const updatedUser = await prisma.usuarios.update({
       nombre: req.body.name || user.nombre,

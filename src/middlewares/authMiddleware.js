@@ -10,7 +10,7 @@ export const protect = async (req, res, next) => {
   if (token) {
     try {
       const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await prisma.usuarios.findUnique({
+      req.user = await prisma.user.findUnique({
         where: { id: decoded.userId },
         select: {
           nombre: true,
@@ -30,7 +30,7 @@ export const protect = async (req, res, next) => {
 };
 
 export const EsTendero = async (req, res, next) => {
-  const rol_tendero = await prisma.roles.findFirst({
+  const rol_tendero = await prisma.role.findFirst({
     where: {
       nombre: "Tendero",
     },
@@ -43,7 +43,7 @@ export const EsTendero = async (req, res, next) => {
 };
 
 export const EsAdmin = async (req, res, next) => {
-  const rol_tendero = await prisma.roles.findFirst({
+  const rol_tendero = await prisma.role.findFirst({
     where: {
       nombre: "Admin",
     },

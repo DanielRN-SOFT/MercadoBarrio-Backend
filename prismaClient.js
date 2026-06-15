@@ -11,7 +11,7 @@ const prisma = new PrismaClient({
       ? ["query", "error", "warn"]
       : ["error"],
   omit: {
-    usuarios: {
+    user: {
       password: true,
     },
   },

@@ -1,19 +1,19 @@
-import { ProductCategoryStatus } from "../../../generated/prisma/index.js";
+import { StoreCategoryStatus } from "../../../generated/prisma/index.js";
 import prisma from "../../../prismaClient.js";
 
-export const getProductCategories = async (req, res) => {
+export const getStoreCategories = async (req, res) => {
   try {
     // Obtenemos la pagina desde el query param, por defecto pagina 1
     const page = req.query.page || 1;
     const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
-  
+
     // Si estamos en página 1: skip=0, página 2: skip=10, página 3: skip=20...
     const skip = (page - 1) * limit;
 
     // Total de registros (para saber cuántas páginas hay en total)
-    const total = await prisma.productCategory.count();
+    const total = await prisma.storeCategory.count();
 
-    const productCategories = await prisma.productCategory.findMany({
+    const storeCategory = await prisma.storeCategory.findMany({
       skip,
       take: limit,
       select: {
@@ -24,7 +24,7 @@ export const getProductCategories = async (req, res) => {
     });
 
     res.json({
-      data: productCategories,
+      data: storeCategory,
       meta: {
         total,
         page,
@@ -37,10 +37,10 @@ export const getProductCategories = async (req, res) => {
   }
 };
 
-export const getProductCategoryById = async (req, res) => {
+export const getStoreCategoryById = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const productCategory = await prisma.productCategory.findUnique({
+    const storeCategory = await prisma.storeCategory.findUnique({
       where: { id },
       select: {
         id: true,
@@ -49,11 +49,11 @@ export const getProductCategoryById = async (req, res) => {
       },
     });
 
-    if (productCategory) {
-      res.json({productCategory});
+    if (storeCategory) {
+      res.json({ storeCategory });
     } else {
       res.status(500);
-      throw new Error("Categoria de producto no encontrada");
+      throw new Error("Categoria de tienda no encontrada");
     }
   } catch (error) {
     res.status(404);
@@ -61,13 +61,13 @@ export const getProductCategoryById = async (req, res) => {
   }
 };
 
-export const createCategory = async (req, res) => {
+export const createStoreCategory = async (req, res) => {
   try {
     const { name } = req.body;
-    const createdCategory = await prisma.productCategory.create({
+    const createdCategory = await prisma.storeCategory.create({
       data: {
         name,
-        status: ProductCategoryStatus.Active,
+        status: StoreCategoryStatus.Active,
       },
     });
     res.json(createdCategory);
@@ -77,21 +77,21 @@ export const createCategory = async (req, res) => {
   }
 };
 
-export const updateProductCategory = async (req, res) => {
+export const updateStoreCategory = async (req, res) => {
   try {
     const { name } = req.body;
     const id = parseInt(req.params.id);
 
-    const productCategory = await prisma.productCategory.findUnique({
+    const storeCategory = await prisma.storeCategory.findUnique({
       where: { id },
     });
 
-    if (!productCategory) {
+    if (!storeCategory) {
       res.status(404);
-      throw new Error("Categoria de producto no encontrada");
+      throw new Error("Categoria de tienda no encontrada");
     }
 
-    const updatedCategory = await prisma.productCategory.update({
+    const updatedCategory = await prisma.storeCategory.update({
       data: { name },
       where: { id },
     });
@@ -103,34 +103,34 @@ export const updateProductCategory = async (req, res) => {
   }
 };
 
-export const deleteProductCategory = async (req, res) => {
+export const deleteStoreCategory = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const productCategory = await prisma.productCategory.findUnique({
+    const storeCategory = await prisma.storeCategory.findUnique({
       where: { id },
     });
 
-    if (productCategory) {
-      const isExistProductCategory = await prisma.product.findFirst({
-        where: { productCategoryId: id },
+    if (storeCategory) {
+      const isExistStoreCategory = await prisma.store.findFirst({
+        where: { storeCategoryId: id },
       });
 
-      if (isExistProductCategory) {
+      if (isExistStoreCategory) {
         res.status(400);
-        throw new Error("Esa categoria esta asociada a un producto");
+        throw new Error("Esa categoria esta asociada a una tienda");
       }
 
-      const deletedProductCategory = await prisma.productCategory.update({
+      const deletedStoreCategory = await prisma.storeCategory.update({
         where: { id },
         data: {
-          status: ProductCategoryStatus.Inactive,
+          status: storeCategory.Inactive,
         },
       });
 
-      res.status(200).json({ deletedProductCategory });
+      res.status(200).json({ deletedStoreCategory });
     } else {
       res.status(404);
-      throw new Error("Categoria de producto no encontrada");
+      throw new Error("Categoria de tienda no encontrada");
     }
   } catch (error) {
     res.status(500);
@@ -138,23 +138,23 @@ export const deleteProductCategory = async (req, res) => {
   }
 };
 
-export const restoreProductCategory = async (req, res) => {
+export const restoreStoreCategory = async (req, res) => {
   const id = parseInt(req.params.id);
-  const productCategory = await prisma.productCategory.findUnique({
+  const storeCategory = await prisma.storeCategory.findUnique({
     where: { id },
   });
 
-  if (productCategory) {
-    const restoredProductCategory = await prisma.productCategory.update({
+  if (storeCategory) {
+    const restoredStoreCategory = await prisma.storeCategory.update({
       where: { id },
       data: {
-        status: ProductCategoryStatus.Active,
+        status: storeCategory.Active,
       },
     });
 
-    res.status(200).json({ restoredProductCategory });
+    res.status(200).json({ restoredStoreCategory });
   } else {
     res.status(404);
-    throw new Error("Categoria de producto no encontrada");
+    throw new Error("Categoria de tienda no encontrada");
   }
 };

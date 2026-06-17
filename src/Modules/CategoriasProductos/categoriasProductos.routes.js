@@ -7,14 +7,15 @@ import {
   deleteProductCategory,
   restoreProductCategory,
 } from "./categoriasProductos.controller.js";
+import { protect, IsAdmin } from "../../middlewares/authMiddleware.js";
 
 const router = express();
 
-router.get("/", getProductCategories);
-router.get("/:id", getProductCategoryById);
-router.post("/", createCategory);
-router.put("/:id", updateProductCategory);
-router.put("/delete/:id", deleteProductCategory);
-router.put("/restore/:id", restoreProductCategory);
+router.get("/", protect, IsAdmin, getProductCategories);
+router.get("/:id", protect, IsAdmin, getProductCategoryById);
+router.post("/", protect, IsAdmin, createCategory);
+router.put("/:id", protect, IsAdmin, updateProductCategory);
+router.put("/delete/:id", protect, IsAdmin, deleteProductCategory);
+router.put("/restore/:id", protect, IsAdmin, restoreProductCategory);
 
 export default router;

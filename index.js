@@ -7,6 +7,7 @@ import authRouter from "./src/Modules/Auth/auth.routes.js";
 import userRouter from "./src/Modules/Usuarios/usuarios.routes.js";
 import errorHandler from "./src/middlewares/ErrorMiddleware.js";
 import roleRouter from "./src/Modules/Roles/roles.routes.js";
+import productCategoryRouter from "./src/Modules/CategoriasProductos/categoriasProductos.routes.js";
 
 // Config
 const port = process.env.PORT || 5000;
@@ -22,6 +23,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/roles", roleRouter);
+app.use("/api/product-categories", productCategoryRouter);
 app.use(errorHandler);
 
 // Servidor

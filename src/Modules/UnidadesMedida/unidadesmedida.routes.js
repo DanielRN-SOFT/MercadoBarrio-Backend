@@ -9,7 +9,7 @@ import {
 } from "./unidadesMedida.controller.js";
 
 const router = express.Router();
-router.get("/", getUnitOfMeasure);
+router.get("/", getUnitsOfMeasure);
 router.get("/:id", getUnitOfMeasureById);
 router.post("/", createUnitOfMeasure);
 router.put("/:id", updateUnitOfMeasure);

@@ -6,7 +6,7 @@ import {
   updateStoreCategory,
   deleteStoreCategory,
   restoreStoreCategory,
-} from "./categoriasTiendas.controller";
+} from "./categoriasTiendas.controller.js";
 
 const router = express.Router();
 

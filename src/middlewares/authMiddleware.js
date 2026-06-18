@@ -18,6 +18,7 @@ export const protect = async (req, res, next) => {
           roleId: true,
         },
       });
+      next();
     } catch (error) {
       console.error(error);
       res.status(401);
@@ -29,28 +30,45 @@ export const protect = async (req, res, next) => {
   }
 };
 
-export const IsTendero = async (req, res, next) => {
+export const isGrocer = async (req, res, next) => {
   const rol_tendero = await prisma.role.findFirst({
     where: {
-      nombre: "Grocer",
+      name: "Grocer",
     },
   });
 
-  if (req.user && req.user.roles_id == rol_tendero.id) {
+  if (!rol_tendero) {
+    res.status(500);
+    throw new Error("Error en el servidor ese rol no existe");
+  }
+
+  const isGrocer = req.user.roleId == rol_tendero.id;
+  if (!isGrocer) {
     res.status(401);
     throw new Error("No autorizado, debe ser Tendero");
   }
+
+  next();
 };
 
 export const IsAdmin = async (req, res, next) => {
-  const rol_tendero = await prisma.role.findFirst({
+  const rol_admin = await prisma.role.findFirst({
     where: {
-      nombre: "Admin",
+      name: "Admin",
     },
   });
 
-  if (req.user && req.user.roles_id == rol_tendero.id) {
+  if (!rol_admin) {
+    res.status(500);
+    throw new Error("Error en el servidor, no existe ese rol");
+  }
+
+  const isAdmin = req.user.roleId == rol_admin.id;
+  console.log(isAdmin);
+  if (!isAdmin) {
     res.status(401);
     throw new Error("No autorizado, debe ser ADMIN");
   }
+
+  next();
 };

@@ -70,7 +70,13 @@ export const createUnitOfMeasure = async (req, res) => {
         status: UnitOfMeasureStatus.Active,
       },
     });
-    res.json(unitOfMeasure);
+    res
+      .status(201)
+      .json({
+        data: unitOfMeasure,
+        status: 201,
+        message: "Unidad de medida creada correctamente",
+      });
   } catch (error) {
     res.status(500);
     throw new Error(error.message);
@@ -91,12 +97,12 @@ export const updateUnitOfMeasure = async (req, res) => {
       throw new Error("Unidad de medida no encontrada");
     }
 
-    const unitOfMeasure = await prisma.unitOfMeasure.update({
+    const updatedUnitOfMeasure = await prisma.unitOfMeasure.update({
       data: { name },
       where: { id },
     });
 
-    res.status(200).json(unitOfMeasure);
+    res.json(updatedUnitOfMeasure);
   } catch (error) {
     res.status(500);
     throw new Error(error.message);

@@ -26,8 +26,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/roles", roleRouter);
 app.use("/api/product-categories", productCategoryRouter);
-app.use("/api/store-categories", router);
-app.use("/api/unit-measures", storeCategoryRouter);
+app.use("/api/store-categories", storeCategoryRouter);
+app.use("/api/unit-measures", unitOfMeasureRouter);
 app.use(errorHandler);
 
 // Servidor

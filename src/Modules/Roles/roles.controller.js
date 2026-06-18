@@ -1,7 +1,8 @@
 import { RoleStatus, UserStatus } from "../../../generated/prisma/index.js";
 import prisma from "../../../prismaClient.js";
-import isNumber from "../../helpers/isNumberId.js";
-import verifyString from "../../helpers/verifiyString.js";
+
+import verifyNumberID from "../../helpers/verifyNumberID.js";
+import verifyStringFields from "../../helpers/verifyStringFields.js";
 
 export const getRoles = async (req, res, next) => {
   try {
@@ -36,7 +37,7 @@ export const getRoleById = async (req, res, next) => {
     const id = parseInt(req.params.id);
 
     // Funcion para determinar si el id es un numero
-    isNumber(id);
+    verifyNumberID(id);
 
     const rol = await prisma.role.findUnique({
       where: { id },
@@ -60,7 +61,7 @@ export const createRole = async (req, res, next) => {
     const { name } = req.body;
 
     // Verificar que el campo llege lleno y sea un string
-    verifyString(name, "El nombre del rol es requerido");
+    verifyStringFields({ name });
 
     const createdRole = await prisma.role.create({
       data: { name: name.trim(), status: RoleStatus.Active },
@@ -86,10 +87,10 @@ export const updateRole = async (req, res, next) => {
     const id = parseInt(req.params.id);
 
     // Funcion para determinar si el id es un numero
-    isNumber(id);
+    verifyNumberID(id);
 
     // Verificar que el campo llege lleno y sea un string
-    verifyString(name, "El nombre del rol es requerido");
+    verifyStringFields({ name });
 
     const role = await prisma.role.findUnique({ where: { id } });
     if (!role) {
@@ -122,7 +123,7 @@ export const deleteRole = async (req, res, next) => {
     const id = parseInt(req.params.id);
 
     // Funcion para determinar si el id es un numero
-    isNumber(id);
+    verifyNumberID(id);
 
     const role = await prisma.role.findUnique({ where: { id } });
     if (!role) {

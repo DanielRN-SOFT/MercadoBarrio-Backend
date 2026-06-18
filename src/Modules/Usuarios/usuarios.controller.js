@@ -1,43 +1,54 @@
 import { UserStatus } from "../../../generated/prisma/index.js";
 import prisma from "../../../prismaClient.js";
+import verifyFields from "../../helpers/verifyStringFields.js";
+import verifyNumberID from "../../helpers/verifyNumberID.js";
 
-export const getUsers = async (req, res) => {
-  // Obtenemos la pagina desde el query param, por defecto pagina 1
-  const page = req.query.page || 1;
-  const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
+export const getUsers = async (req, res, next) => {
+  try {
+    // Obtenemos la pagina desde el query param, por defecto pagina 1
+    const page = req.query.page || 1;
+    const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
 
-  // Si estamos en página 1: skip=0, página 2: skip=10, página 3: skip=20...
-  const skip = (page - 1) * limit;
+    // Si estamos en página 1: skip=0, página 2: skip=10, página 3: skip=20...
+    const skip = (page - 1) * limit;
 
-  // Total de registros (para saber cuántas páginas hay en total)
-  const total = await prisma.user.count();
+    // Ejectuar dos peticiones a la vez, para optimizar la velocidad dez
+    const [total, users] = await Promise.all([
+      prisma.role.count(),
+      prisma.user.findMany({
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          status: true,
+          roleId: true,
+        },
+      }),
+    ]);
 
-  const users = await prisma.user.findMany({
-    skip,
-    take: limit,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      status: true,
-      roleId: true,
-    },
-  });
-
-  res.json({
-    data: users,
-    meta: {
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    },
-  });
+    res.json({
+      data: users,
+      meta: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const getUserById = async (req, res) => {
+export const getUserById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
+
+    // verificar que el id sea un numero
+    verifyNumberID(id);
+
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -51,41 +62,33 @@ export const getUserById = async (req, res) => {
     });
 
     if (user) {
-      res.json({ user });
+      res.json({ data: user });
     } else {
       res.status(500);
       throw new Error("Usuario no encontrado");
     }
   } catch (error) {
-    res.status(404);
-    throw new Error(error.message);
+    next(error);
   }
 };
 
-export const updateUser = async (req, res) => {
+export const updateUser = async (req, res, next) => {
   try {
     const { name, email, phone } = req.body;
     const id = parseInt(req.params.id);
 
+    // Verificar el id
+    verifyNumberID(id);
+
+    // Verificar que todos los campos si lleguen y sean string
+    verifyFields({ name, email, phone });
+
     const user = await prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      res.status(404);
-      throw new Error("Usuario no encontrado");
-    }
-
-    const userEmail = await prisma.user.findFirst({
-      where: {
-        email: email,
-        id: {
-          not: id,
-        },
-      },
-    });
-
-    if (userEmail) {
-      res.status(404);
-      throw new Error("Ese email ya esta registrado en el sistema");
+      const error = new Error("Rol no encontrado");
+      error.statusCode = 404;
+      throw error;
     }
 
     const updatedUser = await prisma.user.update({
@@ -93,16 +96,25 @@ export const updateUser = async (req, res) => {
       where: { id },
     });
 
-    res.status(200).json(updatedUser);
+    res
+      .status(200)
+      .json({ data: updatedUser, message: "Usuario editado exitosamente" });
   } catch (error) {
-    res.status(500);
-    throw new Error(error.message);
+    if (error.code === "P2002") {
+      error.statusCode = 409;
+      error.message = "Ese email ya esta registrado en el sistema";
+    }
+    next(error);
   }
 };
 
-export const deleteUser = async (req, res) => {
+export const deleteUser = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
+
+    // Verificar ID;
+    verifyNumberID(id);
+
     const user = await prisma.user.findUnique({ where: { id } });
 
     if (user) {
@@ -115,20 +127,27 @@ export const deleteUser = async (req, res) => {
         },
       });
 
-      res.json(deletedUser);
+      res.json({
+        data: deletedUser,
+        message: "Usuario eliminado correctamente",
+      });
     } else {
-      res.status(404);
-      throw new Error("Usuario no encontrado");
+      const error = new Error("Usuario no encontrado");
+      error.statusCode = 404;
+      throw error;
     }
   } catch (error) {
-    res.status(500);
-    throw new Error(error.message);
+    next(error);
   }
 };
 
-export const restoreUser = async (req, res) => {
+export const restoreUser = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
+
+    // Verificar que sea un numero el id
+    verifyNumberID(id);
+
     const user = await prisma.user.findUnique({ where: { id } });
 
     if (user) {
@@ -141,13 +160,16 @@ export const restoreUser = async (req, res) => {
         },
       });
 
-      res.json(restoredUser);
+      res.json({
+        data: restoredUser,
+        message: "Usuario restablecido correctamente",
+      });
     } else {
-      res.status(404);
-      throw new Error("Usuario no encontrado");
+      const error = new Error("Usuario no encontrado");
+      error.statusCode = 404;
+      throw error;
     }
   } catch (error) {
-    res.status(500);
-    throw new Error(error.message);
+    next(error);
   }
 };

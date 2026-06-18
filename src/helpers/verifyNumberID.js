@@ -1,4 +1,4 @@
-export default function isNumber(id) {
+export default function verifyNumberID(id) {
   if (isNaN(id)) {
     const error = new Error("El id proporcionado no es válido");
     error.statusCode = 400;

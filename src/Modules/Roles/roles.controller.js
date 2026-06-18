@@ -1,5 +1,7 @@
-import { UserStatus } from "../../../generated/prisma/index.js";
+import { RoleStatus, UserStatus } from "../../../generated/prisma/index.js";
 import prisma from "../../../prismaClient.js";
+import isNumber from "../../helpers/isNumberId.js";
+import verifyString from "../../helpers/verifiyString.js";
 
 export const getRoles = async (req, res, next) => {
   try {
@@ -33,11 +35,8 @@ export const getRoleById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
 
-    if (isNaN(id)) {
-      const error = new Error("El id proporcionado no es válido");
-      error.statusCode = 400;
-      throw error;
-    }
+    // Funcion para determinar si el id es un numero
+    isNumber(id);
 
     const rol = await prisma.role.findUnique({
       where: { id },
@@ -60,14 +59,11 @@ export const createRole = async (req, res, next) => {
   try {
     const { name } = req.body;
 
-    if (!name || typeof name !== "string" || !name.trim()) {
-      const error = new Error("El nombre del rol es requerido");
-      error.statusCode = 400;
-      throw error;
-    }
+    // Verificar que el campo llege lleno y sea un string
+    verifyString(name, "El nombre del rol es requerido");
 
     const createdRole = await prisma.role.create({
-      data: { name: name.trim() },
+      data: { name: name.trim(), status: RoleStatus.Active },
     });
 
     res.status(201).json({
@@ -75,6 +71,7 @@ export const createRole = async (req, res, next) => {
       message: "Rol creado correctamente",
     });
   } catch (error) {
+    // Status code si prisma detecta un fallo en campo unique
     if (error.code === "P2002") {
       error.statusCode = 409;
       error.message = "Ya existe un rol con ese nombre";
@@ -88,17 +85,11 @@ export const updateRole = async (req, res, next) => {
     const { name } = req.body;
     const id = parseInt(req.params.id);
 
-    if (isNaN(id)) {
-      const error = new Error("El id proporcionado no es válido");
-      error.statusCode = 400;
-      throw error;
-    }
+    // Funcion para determinar si el id es un numero
+    isNumber(id);
 
-    if (!name || typeof name !== "string" || !name.trim()) {
-      const error = new Error("El nombre del rol es requerido");
-      error.statusCode = 400;
-      throw error;
-    }
+    // Verificar que el campo llege lleno y sea un string
+    verifyString(name, "El nombre del rol es requerido");
 
     const role = await prisma.role.findUnique({ where: { id } });
     if (!role) {
@@ -117,6 +108,7 @@ export const updateRole = async (req, res, next) => {
       message: "Rol actualizado correctamente",
     });
   } catch (error) {
+    // Status code si prisma detecta un fallo en campo unique
     if (error.code === "P2002") {
       error.statusCode = 409;
       error.message = "Ya existe un rol con ese nombre";
@@ -129,11 +121,8 @@ export const deleteRole = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
 
-    if (isNaN(id)) {
-      const error = new Error("El id proporcionado no es válido");
-      error.statusCode = 400;
-      throw error;
-    }
+    // Funcion para determinar si el id es un numero
+    isNumber(id);
 
     const role = await prisma.role.findUnique({ where: { id } });
     if (!role) {

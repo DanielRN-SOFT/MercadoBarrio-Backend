@@ -10,6 +10,7 @@ import roleRouter from "./src/Modules/Roles/roles.routes.js";
 import productCategoryRouter from "./src/Modules/CategoriasProductos/categoriasProductos.routes.js";
 import unitOfMeasureRouter from "./src/Modules/UnidadesMedida/unidadesmedida.routes.js";
 import storeCategoryRouter from "./src/Modules/CategoriasTiendas/categoriasTiendas.routes.js";
+import attendanceScheduleRouter from "./src/Modules/HorariosAtencion/horariosatencion.routes.js";
 
 // Config
 const port = process.env.PORT || 5000;
@@ -28,6 +29,7 @@ app.use("/api/roles", roleRouter);
 app.use("/api/product-categories", productCategoryRouter);
 app.use("/api/store-categories", storeCategoryRouter);
 app.use("/api/unit-measures", unitOfMeasureRouter);
+app.use("/api/attendance-schedule", attendanceScheduleRouter);
 app.use(errorHandler);
 
 // Servidor

@@ -46,6 +46,7 @@ export const attachStore = async (req, res, next) => {
   req.store = store;
   next();
 };
+
 export const isGrocer = async (req, res, next) => {
   const rol_tendero = await prisma.role.findFirst({
     where: {

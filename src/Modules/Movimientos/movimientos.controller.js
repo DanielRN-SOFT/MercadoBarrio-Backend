@@ -93,53 +93,45 @@ export const getMovementById = async (req, res, next) => {
 
 export const createMovements = async (req, res, next) => {
   try {
-    const { type, details, products = [], quantity, unitCost } = req.body;
-
-    const storeId = parseInt(req.body.storeId);
+    const { type, reason, products = [] } = req.body;
     const supplierId = parseInt(req.body.supplierId);
 
-    const movementObj = {
-      date: getDateNow(),
-      type: MovementStatus.Active,
-      userId: req.user.id,
-      store: req.store.id,
-      status: MovementStatus.Active,
-    };
-
-    // Campos opcionales
-    if (details) {
-      movementObj.details = details;
-    }
-
-    if (supplierId) {
-      movementObj.supplierId = supplierId;
-    }
-
-    const movement = await prisma.movement.create({
-      data: movementObj,
-    });
-
-    // Verificar que la cantidad en productos no sea negativa
+    // Validaciones ANTES de tocar la BD (fail fast)
     isNumberStock(products);
-
-    // Si el movimiento es de salida, verificamos el stock
     if (type == MovementType.Exit) {
-      isExistStock(products);
+      await isExistStock(products);
     }
 
-    await Promise(
-      products.map((product) => {
-        const { productId, quantity, unitCost } = product;
-        prisma.movementDetail.create({
-          data: {
-            movementId: movement.id,
-            productId,
-            quantity,
-            unitCost,
-          },
-        });
-      }),
-    );
+    // Transacciones para que todas las consultas se ejecuten a la vez
+    const movement = await prisma.$transaction(async (tx) => {
+      const movementObj = {
+        date: getDateNow(),
+        type: MovementStatus.Active,
+        userId: req.user.id,
+        store: req.store.id,
+        status: MovementStatus.Active,
+      };
+      if (reason) movementObj.reason = reason;
+      if (supplierId) movementObj.supplierId = supplierId;
+
+      const createdMovement = await tx.movement.create({ data: movementObj });
+
+      await Promise.all(
+        products.map((product) => {
+          const { productId, quantity, unitCost } = product;
+          return tx.movementDetail.create({
+            data: {
+              movementId: createdMovement.id,
+              productId,
+              quantity,
+              unitCost,
+            },
+          });
+        }),
+      );
+
+      return createdMovement;
+    });
 
     res.status(201).json({
       data: movement,

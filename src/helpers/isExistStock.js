@@ -1,4 +1,4 @@
-import prisma from "../../prismaClient";
+import prisma from "../../prismaClient.js";
 
 export default async function isExistStock(products = []) {
   const stocks = await Promise.all(

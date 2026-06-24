@@ -1,4 +1,4 @@
-import prisma from "../../prismaClient";
+import prisma from "../../prismaClient.js";
 
 export default function isNumberStock(products = []) {
   products.map((product) => {

@@ -3,12 +3,12 @@ import {
   getMovements,
   getMovementById,
   createMovements,
-} from "./movimientos.controller";
+} from "./movimientos.controller.js";
 import {
   attachStore,
   isGrocer,
   protect,
-} from "../../middlewares/authMiddleware";
+} from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
 router.get("/", protect, isGrocer, attachStore, getMovements);

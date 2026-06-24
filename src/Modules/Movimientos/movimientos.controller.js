@@ -1,7 +1,6 @@
 import prisma from "../../../prismaClient.js";
 import verifyFields from "../../helpers/verifyStringFields.js";
 import verifyNumberID from "../../helpers/verifyNumberID.js";
-import verifyDate from "../../helpers/verifyDate.js";
 import {
   MovementStatus,
   MovementType,
@@ -9,6 +8,7 @@ import {
 import getDateNow from "../../helpers/getDateNow.js";
 import isExistStock from "../../helpers/isExistStock.js";
 import isNumberStock from "../../helpers/isNumberStock.js";
+import { isMyStore } from "../../helpers/isMyStore.js";
 
 export const getMovements = async (req, res, next) => {
   try {
@@ -17,7 +17,11 @@ export const getMovements = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const [total, movements] = await Promise.all([
-      prisma.movement.count(),
+      prisma.movement.count({
+        where: {
+          storeId: req.store.id,
+        },
+      }),
       prisma.movement.findMany({
         skip,
         take: limit,
@@ -26,11 +30,16 @@ export const getMovements = async (req, res, next) => {
           date: true,
           status: true,
           type: true,
+          reason: true,
           userId: true,
           storeId: true,
           supplierId: true,
           details: true,
           cancellationDate: true,
+          supplier: true,
+        },
+        where: {
+          storeId: req.store.id,
         },
       }),
     ]);
@@ -68,6 +77,9 @@ export const getMovementById = async (req, res, next) => {
       },
     });
 
+    // Evitar que se pueda acceder a otra informacion de otra tienda
+    isMyStore(req.user.id, movement.userId);
+
     if (movement) {
       res.json({ data: movement });
     } else {
@@ -81,14 +93,7 @@ export const getMovementById = async (req, res, next) => {
 
 export const createMovements = async (req, res, next) => {
   try {
-    const {
-      type,
-      details,
-      supplierId,
-      products = [],
-      quantity,
-      unitCost,
-    } = req.body;
+    const { type, details, products = [], quantity, unitCost } = req.body;
 
     const storeId = parseInt(req.body.storeId);
     const supplierId = parseInt(req.body.supplierId);

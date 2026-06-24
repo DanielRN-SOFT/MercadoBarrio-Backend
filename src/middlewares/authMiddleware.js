@@ -33,7 +33,7 @@ export const protect = async (req, res, next) => {
 
 // solo para rutas de tendero
 export const attachStore = async (req, res, next) => {
-  const store = await prisma.store.findUnique({
+  const store = await prisma.store.findFirst({
     where: { userId: req.user.id },
     select: { id: true },
   });

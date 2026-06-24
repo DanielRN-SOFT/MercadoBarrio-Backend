@@ -11,6 +11,10 @@ import productCategoryRouter from "./src/Modules/CategoriasProductos/categoriasP
 import unitOfMeasureRouter from "./src/Modules/UnidadesMedida/unidadesmedida.routes.js";
 import storeCategoryRouter from "./src/Modules/CategoriasTiendas/categoriasTiendas.routes.js";
 import attendanceScheduleRouter from "./src/Modules/HorariosAtencion/horariosatencion.routes.js";
+import storeRouter from "./src/Modules/Tiendas/tiendas.routes.js";
+import productRouter from "./src/Modules/Productos/productos.routes.js";
+import saleRouter from "./src/Modules/Ventas/ventas.routes.js";
+import saleDetailRouter from "./src/Modules/DetalleVenta/detalleventa.routes.js";
 import movementRouter from "./src/Modules/Movimientos/movimientos.routes.js";
 
 // Config
@@ -31,7 +35,6 @@ app.use("/api/product-categories", productCategoryRouter);
 app.use("/api/store-categories", storeCategoryRouter);
 app.use("/api/unit-measures", unitOfMeasureRouter);
 app.use("/api/attendance-schedule", attendanceScheduleRouter);
-app.use("/api/movements", movementRouter);
 app.use(errorHandler);
 
 // Servidor

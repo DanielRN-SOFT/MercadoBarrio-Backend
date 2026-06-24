@@ -11,6 +11,7 @@ import productCategoryRouter from "./src/Modules/CategoriasProductos/categoriasP
 import unitOfMeasureRouter from "./src/Modules/UnidadesMedida/unidadesmedida.routes.js";
 import storeCategoryRouter from "./src/Modules/CategoriasTiendas/categoriasTiendas.routes.js";
 import attendanceScheduleRouter from "./src/Modules/HorariosAtencion/horariosatencion.routes.js";
+import movementRouter from "./src/Modules/Movimientos/movimientos.routes.js";
 
 // Config
 const port = process.env.PORT || 5000;
@@ -30,6 +31,7 @@ app.use("/api/product-categories", productCategoryRouter);
 app.use("/api/store-categories", storeCategoryRouter);
 app.use("/api/unit-measures", unitOfMeasureRouter);
 app.use("/api/attendance-schedule", attendanceScheduleRouter);
+app.use("/api/movements", movementRouter);
 app.use(errorHandler);
 
 // Servidor

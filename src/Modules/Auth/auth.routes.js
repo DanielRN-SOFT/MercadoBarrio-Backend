@@ -7,6 +7,7 @@ import {
   registerUser,
   forgotPassword,
   resetPassword,
+  comprobarToken,
 } from "./auth.controller.js";
 import { protect } from "../../middlewares/authMiddleware.js";
 
@@ -17,6 +18,7 @@ router.post("/register", registerUser);
 router.post("/logout", logoutUser);
 router.get("/profile", protect, getUserProfile);
 router.put("/profile", protect, updateUserProfile);
+router.get("/comprobar-token/:token", comprobarToken);
 router.post("/forgot-password", forgotPassword);
 router.post("/forgot-password/:token", resetPassword);
 

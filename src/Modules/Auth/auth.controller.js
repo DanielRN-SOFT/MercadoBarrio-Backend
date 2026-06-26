@@ -181,8 +181,30 @@ export const resetPassword = async (req, res, next) => {
       },
     });
 
-    res.json({ msg: "La contraseña ha sido restablecida exitosamente" });
+    res.json({ message: "La contraseña ha sido restablecida exitosamente" });
   } catch (error) {
     next(error);
+  }
+};
+
+export const comprobarToken = async (req, res, next) => {
+  try {
+    // Token de acceso
+    const { token } = req.params;
+
+    // Verificar que el usuario tenga el token asignado
+    const tokenValido = await prisma.user.findFirst({ where: { token } });
+
+    // Si no existe, se genera un error
+    if (!tokenValido) {
+      const error = new Error("Token no valido");
+      error.statusCode = 403;
+      next(error);
+    }
+
+    // Si pasa la validacion, mensaje de confirmacion
+    res.json({ message: "Token valido y el usuario existe" });
+  } catch (error) {
+    console.log(error);
   }
 };

@@ -39,6 +39,43 @@ export const getStores = async (req, res, next) => {
   }
 };
 
+export const getStoresPublic = async (req, res, next) => {
+  try {
+    const page = req.query.page || 1;
+    const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
+    const skip = (page - 1) * limit;
+
+    const [total, stores] = await Promise.all([
+      prisma.store.count(),
+      prisma.store.findMany({
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          phone: true,
+          status: true,
+          storeCategory: {
+            select: { id: true, name: true },
+          },
+        },
+      }),
+    ]);
+
+    res.json({
+      data: stores,
+      meta: {
+        total,
+        page: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getStoreById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
@@ -75,7 +112,16 @@ export const getStoreById = async (req, res, next) => {
 
 export const createStore = async (req, res, next) => {
   try {
-    const { name, address, longitude, latitude, description, phone, storeCategoryId, userId } = req.body;
+    const {
+      name,
+      address,
+      longitude,
+      latitude,
+      description,
+      phone,
+      storeCategoryId,
+      userId,
+    } = req.body;
     verifyFields({ name, address });
 
     if (!storeCategoryId || isNaN(storeCategoryId)) {
@@ -144,7 +190,15 @@ export const updateStore = async (req, res, next) => {
     const id = parseInt(req.params.id);
     verifyNumberID(id);
 
-    const { name, address, longitude, latitude, description, phone, storeCategoryId } = req.body;
+    const {
+      name,
+      address,
+      longitude,
+      latitude,
+      description,
+      phone,
+      storeCategoryId,
+    } = req.body;
     verifyFields({ name, address });
 
     const store = await prisma.store.findUnique({ where: { id } });

@@ -81,7 +81,9 @@ export const registerUser = async (req, res, next) => {
 export const logoutUser = (req, res) => {
   res.cookie("jwt", "", {
     httpOnly: true,
-    expires: new Date(0), // Fuerza que expire
+    secure: process.env.NODE_ENV !== "development",
+    sameSite: "strict",
+    expires: new Date(0),
   });
   res.status(200).json({ message: "Log out exitoso" });
 };

@@ -1,9 +1,21 @@
 import express from "express";
-import { getStores, getStoreById, createStore, updateStore, deleteStore, restoreStore } from "./tiendas.controller.js";
+import {
+  getStores,
+  getStoreById,
+  createStore,
+  updateStore,
+  deleteStore,
+  restoreStore,
+  getStoresPublic,
+} from "./tiendas.controller.js";
 import { protect, IsAdmin } from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
+// Rutas publicas
+router.get("/public", getStoresPublic);
+
+// Rutas privadas
 router.get("/", protect, IsAdmin, getStores);
 router.get("/:id", protect, IsAdmin, getStoreById);
 router.post("/", protect, IsAdmin, createStore);

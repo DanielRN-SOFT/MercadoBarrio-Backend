@@ -46,6 +46,8 @@ export async function seedProducts() {
       lowStockThreshold: 10,
       currentStock: 50,
       status: "Active",
+      photo:
+        "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=400&q=80",
       productCategoryId: catBebidas.id,
       unitOfMeasureId: uomUnidad.id,
       storeId: store1.id,
@@ -57,6 +59,8 @@ export async function seedProducts() {
       lowStockThreshold: 10,
       currentStock: 30,
       status: "Active",
+      photo:
+        "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80",
       productCategoryId: catBebidas.id,
       unitOfMeasureId: uomLitro.id,
       storeId: store1.id,
@@ -68,6 +72,8 @@ export async function seedProducts() {
       lowStockThreshold: 5,
       currentStock: 20,
       status: "Active",
+      photo:
+        "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&q=80",
       productCategoryId: catLacteos.id,
       unitOfMeasureId: uomLitro.id,
       storeId: store1.id,
@@ -79,6 +85,8 @@ export async function seedProducts() {
       lowStockThreshold: 5,
       currentStock: 15,
       status: "Active",
+      photo:
+        "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=400&q=80",
       productCategoryId: catLacteos.id,
       unitOfMeasureId: uomUnidad.id,
       storeId: store1.id,
@@ -90,6 +98,8 @@ export async function seedProducts() {
       lowStockThreshold: 10,
       currentStock: 40,
       status: "Active",
+      photo:
+        "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&q=80",
       productCategoryId: catSnacks.id,
       unitOfMeasureId: uomUnidad.id,
       storeId: store1.id,
@@ -101,6 +111,8 @@ export async function seedProducts() {
       lowStockThreshold: 10,
       currentStock: 60,
       status: "Active",
+      photo:
+        "https://plus.unsplash.com/premium_photo-1705338026411-00639520a438?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8YXJyb3p8ZW58MHx8MHx8fDA%3D",
       productCategoryId: catGranos.id,
       unitOfMeasureId: uomKg.id,
       storeId: store1.id,
@@ -112,6 +124,8 @@ export async function seedProducts() {
       lowStockThreshold: 8,
       currentStock: 25,
       status: "Active",
+      photo:
+        "https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&q=80",
       productCategoryId: catGranos.id,
       unitOfMeasureId: uomUnidad.id,
       storeId: store1.id,
@@ -124,6 +138,8 @@ export async function seedProducts() {
       lowStockThreshold: 5,
       currentStock: 35,
       status: "Active",
+      photo:
+        "https://images.unsplash.com/photo-1585232350693-48c75b4e8c44?w=400&q=80",
       productCategoryId: catAseo.id,
       unitOfMeasureId: uomUnidad.id,
       storeId: store2.id,
@@ -135,6 +151,8 @@ export async function seedProducts() {
       lowStockThreshold: 5,
       currentStock: 18,
       status: "Active",
+      photo:
+        "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400&q=80",
       productCategoryId: catAseo.id,
       unitOfMeasureId: uomPaquete.id,
       storeId: store2.id,
@@ -146,12 +164,13 @@ export async function seedProducts() {
       lowStockThreshold: 8,
       currentStock: 22,
       status: "Active",
+      photo:
+        "https://images.unsplash.com/photo-1614961233913-a5113a4a34ed?w=400&q=80",
       productCategoryId: catBebidas.id,
       unitOfMeasureId: uomUnidad.id,
       storeId: store2.id,
     },
   ];
-
   for (const product of products) {
     await prisma.product.create({ data: product });
   }

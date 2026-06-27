@@ -7,6 +7,7 @@ import {
   deleteStore,
   restoreStore,
   getStoresPublic,
+  getStorePublicById,
 } from "./tiendas.controller.js";
 import { protect, IsAdmin } from "../../middlewares/authMiddleware.js";
 
@@ -14,6 +15,7 @@ const router = express.Router();
 
 // Rutas publicas
 router.get("/public", getStoresPublic);
+router.get("/public/:id", getStorePublicById);
 
 // Rutas privadas
 router.get("/", protect, IsAdmin, getStores);

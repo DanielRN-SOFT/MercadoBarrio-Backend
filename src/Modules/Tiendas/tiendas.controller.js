@@ -119,6 +119,68 @@ export const getStoresPublic = async (req, res, next) => {
   }
 };
 
+export const getStorePublicById = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    verifyNumberID(id);
+
+    const store = await prisma.store.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        neighborhood: true,
+        description: true,
+        logo: true,
+        photo: true,
+        phone: true,
+        status: true,
+        storeCategory: {
+          select: { id: true, name: true },
+        },
+        schedules: {
+          select: {
+            id: true,
+            weekDay: true,
+            startTime: true,
+            endTime: true,
+            status: true,
+          },
+        },
+        products: {
+          where: { status: "Active" },
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            description: true,
+            photo: true,
+            currentStock: true,
+            lowStockThreshold: true,
+            referenceCode: true,
+            productCategory: {
+              select: { id: true, name: true },
+            },
+            unitOfMeasure: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (store) {
+      res.json({ data: store });
+    } else {
+      res.status(404);
+      throw new Error("Tienda no encontrada");
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getStoreById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);

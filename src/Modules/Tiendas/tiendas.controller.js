@@ -205,7 +205,7 @@ export const getStoreById = async (req, res, next) => {
   }
 };
 
-export const createMyStore = async (req, res, next) => {
+export const createStore = async (req, res, next) => {
   try {
     const { name, address, neighborhood, longitude, latitude, description, phone, photo, storeCategoryId } = req.body;
 
@@ -280,7 +280,7 @@ export const createMyStore = async (req, res, next) => {
   }
 };
 
-export const updateMyStore = async (req, res, next) => {
+export const updateStore = async (req, res, next) => {
   try {
     const store = await prisma.store.findFirst({
       where: { userId: req.user.id },

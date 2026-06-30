@@ -5,18 +5,24 @@ import verifyNumberID from "../../helpers/verifyNumberID.js";
 
 export const getProducts = async (req, res, next) => {
   try {
-    const page = req.query.page || 1;
+    const page = parseInt(req.query.page) || 1;
     const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
     const skip = (page - 1) * limit;
+    const { name, productCategoryId, status } = req.query;
+
+    const where = {
+      storeId: req.store.id,
+      ...(name && { name: { contains: name } }),
+      ...(productCategoryId && { productCategoryId: parseInt(productCategoryId) }),
+      ...(status && { status }),
+    };
 
     const [total, products] = await Promise.all([
-      prisma.product.count({
-        where: { storeId: req.store.id },
-      }),
+      prisma.product.count({ where }),
       prisma.product.findMany({
+        where,
         skip,
         take: limit,
-        where: { storeId: req.store.id },
         select: {
           id: true,
           name: true,
@@ -26,7 +32,11 @@ export const getProducts = async (req, res, next) => {
           status: true,
           productCategoryId: true,
           unitOfMeasureId: true,
+          productCategory: {
+            select: { id: true, name: true },
+          },
         },
+        orderBy: { name: "asc" },
       }),
     ]);
 

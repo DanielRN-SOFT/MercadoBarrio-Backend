@@ -10,9 +10,11 @@ import {
 import { protect, IsAdmin } from "../../middlewares/authMiddleware.js";
 
 const router = express();
+// General
+router.get("/", protect, getProductCategories);
+router.get("/:id", protect, getProductCategoryById);
 
-router.get("/", protect, IsAdmin, getProductCategories);
-router.get("/:id", protect, IsAdmin, getProductCategoryById);
+// Admin
 router.post("/", protect, IsAdmin, createCategory);
 router.put("/:id", protect, IsAdmin, updateProductCategory);
 router.put("/delete/:id", protect, IsAdmin, deleteProductCategory);

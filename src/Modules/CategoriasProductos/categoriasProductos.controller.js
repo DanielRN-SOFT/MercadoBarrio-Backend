@@ -35,6 +35,58 @@ export const getProductCategories = async (req, res, next) => {
   }
 };
 
+// Para el buscador público — solo categorías con al menos un producto
+// activo y con stock disponible, sin importar la tienda.
+export const getProductCategoriesWithProducts = async (req, res, next) => {
+  try {
+    const productCategories = await prisma.productCategory.findMany({
+      where: {
+        status: ProductCategoryStatus.Active,
+        products: {
+          some: {
+            status: "Active",
+            currentStock: { gt: 0 },
+            store: { status: "Active" },
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
+    res.json({ data: productCategories });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Para el panel del tendero — solo las categorías que ya usa en su
+// propio catálogo (sin importar si el producto está activo o inactivo,
+// porque el estado se filtra aparte).
+export const getProductCategoriesByStore = async (req, res, next) => {
+  try {
+    const productCategories = await prisma.productCategory.findMany({
+      where: {
+        products: {
+          some: { storeId: req.store.id },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
+    res.json({ data: productCategories });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getProductCategoryById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);

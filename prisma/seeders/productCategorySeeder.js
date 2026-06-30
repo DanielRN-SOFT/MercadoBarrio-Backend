@@ -9,8 +9,12 @@ export async function seedProductCategories() {
     { name: "Panadería", status: "Active" },
     { name: "Carnes", status: "Active" },
     { name: "Granos", status: "Active" },
+    { name: "Frutas y Verduras", status: "Active" },
+    { name: "Licores", status: "Active" },
+    { name: "Ferretería", status: "Active" },
+    { name: "Papelería", status: "Active" },
+    { name: "Cafetería", status: "Active" },
   ];
-
   for (const cat of categories) {
     await prisma.productCategory.upsert({
       where: { name: cat.name },
@@ -18,6 +22,5 @@ export async function seedProductCategories() {
       create: cat,
     });
   }
-
   console.log("✅ Product categories seeded");
 }

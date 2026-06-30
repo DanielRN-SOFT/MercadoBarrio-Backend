@@ -164,8 +164,7 @@ export const updateProduct = async (req, res, next) => {
     const id = parseInt(req.params.id);
     verifyNumberID(id);
 
-    const { name, price, description, referenceCode, lowStockThreshold, photo, currentStock, productCategoryId, unitOfMeasureId } =
-      req.body;
+    const { name, price, description, referenceCode, lowStockThreshold, photo, productCategoryId, unitOfMeasureId } = req.body;
     verifyFields({ name });
 
     if (price === undefined || isNaN(price) || price < 0) {
@@ -205,6 +204,19 @@ export const updateProduct = async (req, res, next) => {
       }
     }
 
+    const previousValue = {
+      name: product.name,
+      price: product.price,
+      description: product.description,
+      referenceCode: product.referenceCode,
+      lowStockThreshold: product.lowStockThreshold,
+      photo: product.photo,
+      productCategoryId: product.productCategoryId,
+      unitOfMeasureId: product.unitOfMeasureId,
+    };
+
+    // currentStock NO se incluye aquí a propósito (RF-15): el stock
+    // solo se modifica mediante movimientos de inventario o ventas.
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
@@ -214,9 +226,31 @@ export const updateProduct = async (req, res, next) => {
         referenceCode,
         lowStockThreshold,
         photo,
-        currentStock,
         productCategoryId,
         unitOfMeasureId,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        eventActionType: "UPDATE",
+        userId: req.user.id,
+        clientIp: req.ip ?? "unknown",
+        resourceType: "Product",
+        resourceId: product.id,
+        previousValue: JSON.stringify(previousValue),
+        newValue: JSON.stringify({
+          name: updatedProduct.name,
+          price: updatedProduct.price,
+          description: updatedProduct.description,
+          referenceCode: updatedProduct.referenceCode,
+          lowStockThreshold: updatedProduct.lowStockThreshold,
+          photo: updatedProduct.photo,
+          productCategoryId: updatedProduct.productCategoryId,
+          unitOfMeasureId: updatedProduct.unitOfMeasureId,
+        }),
+        description: "Producto actualizado",
+        status: "Active",
       },
     });
 

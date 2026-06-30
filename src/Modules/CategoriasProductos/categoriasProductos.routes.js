@@ -11,8 +11,8 @@ import { protect, IsAdmin } from "../../middlewares/authMiddleware.js";
 
 const router = express();
 // General
-router.get("/", protect, getProductCategories);
-router.get("/:id", protect, getProductCategoryById);
+router.get("/", getProductCategories);
+router.get("/:id", getProductCategoryById);
 
 // Admin
 router.post("/", protect, IsAdmin, createCategory);

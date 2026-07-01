@@ -2,6 +2,7 @@ import { StoreStatus } from "../../../generated/prisma/index.js";
 import prisma from "../../../prismaClient.js";
 import verifyFields from "../../helpers/verifyStringFields.js";
 import verifyNumberID from "../../helpers/verifyNumberID.js";
+import { buildStoreWhere, storeSelect } from "../../helpers/storeFilters.js";
 
 export const getStores = async (req, res, next) => {
   try {
@@ -39,81 +40,41 @@ export const getStores = async (req, res, next) => {
   }
 };
 
+// Vista pública paginada (la que ya tienes, sin tocar su comportamiento)
 export const getStoresPublic = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
+    const limit = parseInt(process.env.PUBLIC_PAGINATION_LIMIT) || 10;
     const skip = (page - 1) * limit;
-    const { name, neighborhood, storeCategoryId, openNow } = req.query;
-
-    // Hora colombiana
-    const now = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }),
-    );
-    const weekDays = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    const currentDay = weekDays[now.getDay()];
-    const currentTime = new Date();
-    currentTime.setFullYear(1970, 0, 1); // Prisma guarda Time con fecha base 1970
-
-    const where = {
-      status: "Active",
-      ...(name && { name: { contains: name } }),
-      ...(neighborhood && {
-        neighborhood: { contains: neighborhood },
-      }),
-      ...(storeCategoryId && { storeCategoryId: parseInt(storeCategoryId) }),
-      ...(openNow === "true" && {
-        schedules: {
-          some: {
-            weekDay: currentDay,
-            startTime: { lte: currentTime },
-            endTime: { gte: currentTime },
-            status: "Active",
-          },
-        },
-      }),
-    };
+    const where = buildStoreWhere(req.query);
 
     const [total, stores] = await Promise.all([
       prisma.store.count({ where }),
-      prisma.store.findMany({
-        where,
-        skip,
-        take: limit,
-        select: {
-          id: true,
-          name: true,
-          address: true,
-          phone: true,
-          status: true,
-          neighborhood: true,
-          latitude: true,
-          longitude: true,
-          logo: true,
-          photo: true,
-          storeCategory: {
-            select: { id: true, name: true },
-          },
-        },
-      }),
+      prisma.store.findMany({ where, skip, take: limit, select: storeSelect }),
     ]);
 
     res.json({
       data: stores,
-      meta: {
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
+      meta: { total, page, totalPages: Math.ceil(total / limit) },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Vista para el mapa: todo lo que aplique al filtro, sin paginar
+export const getStoresForMap = async (req, res, next) => {
+  try {
+    const where = buildStoreWhere(req.query);
+    const MAX_RESULTS = 1000; // tope de seguridad, ajusta según tu volumen real
+
+    const stores = await prisma.store.findMany({
+      where,
+      take: MAX_RESULTS,
+      select: storeSelect,
+    });
+
+    res.json({ data: stores });
   } catch (error) {
     next(error);
   }
@@ -125,7 +86,7 @@ export const getStorePublicById = async (req, res, next) => {
     verifyNumberID(id);
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
+    const limit = parseInt(process.env.PUBLIC_PAGINATION_LIMIT) || 10;
     const skip = (page - 1) * limit;
     const { productCategoryId } = req.query;
 

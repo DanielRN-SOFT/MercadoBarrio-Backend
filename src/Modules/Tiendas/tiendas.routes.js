@@ -11,6 +11,7 @@ import {
   getMyStore,
   createMyStore,
   updateMyStore,
+  getStoresForMap,
 } from "./tiendas.controller.js";
 import { protect, IsAdmin, isGrocer, attachStore } from "../../middlewares/authMiddleware.js";
 
@@ -18,6 +19,7 @@ const router = express.Router();
 
 // Rutas públicas
 router.get("/public", getStoresPublic);
+router.get("/public/map", getStoresForMap);
 router.get("/public/:id", getStorePublicById);
 
 // Rutas del tendero (su propia tienda)

@@ -5,13 +5,13 @@ import {
 import prisma from "../../../prismaClient.js";
 import verifyFields from "../../helpers/verifyStringFields.js";
 import verifyNumberID from "../../helpers/verifyNumberID.js";
-import isMyStore from "../../helpers/isMyStore.js";
 
 export const getAttendanceSchedule = async (req, res, next) => {
   try {
     const page = req.query.page || 1;
     const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
     const skip = (page - 1) * limit;
+    const { weekDay, status } = req.query;
 
     const WEEK_ORDER = {
       Monday: 1,
@@ -23,18 +23,27 @@ export const getAttendanceSchedule = async (req, res, next) => {
       Sunday: 7,
     };
 
+    // Filtros opcionales por día de la semana y estado.
+    // Se valida contra los valores reales del enum para evitar pasarle a Prisma
+    // un valor arbitrario que rompa la query.
+    const where = { storeId: req.store.id };
+
+    if (weekDay && Object.keys(WEEK_ORDER).includes(weekDay)) {
+      where.weekDay = weekDay;
+    }
+
+    if (status && Object.values(ScheduleStatus).includes(status)) {
+      where.status = status;
+    }
+
     let [total, attendanceSchedules] = await Promise.all([
       prisma.attendanceSchedule.count({
-        where: {
-          storeId: req.store.id,
-        },
+        where,
       }),
       prisma.attendanceSchedule.findMany({
         skip,
         take: limit,
-        where: {
-          storeId: req.store.id,
-        },
+        where,
         select: {
           id: true,
           weekDay: true,
@@ -45,17 +54,18 @@ export const getAttendanceSchedule = async (req, res, next) => {
       }),
     ]);
 
-    ((attendanceSchedules = attendanceSchedules.sort(
+    attendanceSchedules = attendanceSchedules.sort(
       (a, b) => WEEK_ORDER[a.weekDay] - WEEK_ORDER[b.weekDay],
-    )),
-      res.json({
-        data: attendanceSchedules,
-        meta: {
-          total,
-          page,
-          totalPages: Math.ceil(total / limit),
-        },
-      }));
+    );
+
+    res.json({
+      data: attendanceSchedules,
+      meta: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -66,6 +76,9 @@ export const getAttendanceScheduleById = async (req, res, next) => {
     const id = parseInt(req.params.id);
     verifyNumberID(id);
 
+    // AttendanceSchedule no tiene userId (pertenece a una tienda, no a un usuario),
+    // así que la pertenencia se garantiza filtrando por storeId directamente en la query,
+    // en vez de usar isMyStore (que espera dataBD.userId).
     const attendanceSchedule = await prisma.attendanceSchedule.findFirst({
       where: { id, storeId: req.store.id },
       select: {
@@ -75,8 +88,6 @@ export const getAttendanceScheduleById = async (req, res, next) => {
         status: true,
       },
     });
-
-    isMyStore(req, attendanceSchedule);
 
     if (attendanceSchedule) {
       res.json({ data: attendanceSchedule });
@@ -93,6 +104,14 @@ export const createAttendanceSchedule = async (req, res, next) => {
   try {
     const { weekDay, startTime, endTime } = req.body;
     verifyFields({ weekDay });
+
+    if (new Date(endTime).getTime() <= new Date(startTime).getTime()) {
+      const error = new Error(
+        "El horario de salida debe ser mayor al horario de entrada",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
 
     const verificarHorario = await prisma.attendanceSchedule.findFirst({
       where: {
@@ -111,14 +130,6 @@ export const createAttendanceSchedule = async (req, res, next) => {
       throw new Error(
         "Ya existe un horario que se cruza con el horario ingresado",
       );
-    }
-
-    if (new Date(endTime).getTime() <= new Date(startTime).getTime()) {
-      const error = new Error(
-        "El horario de salida debe ser mayor al horario de entrada",
-      );
-      error.statusCode = 400;
-      throw error;
     }
 
     const createdAttendanceSchedule = await prisma.attendanceSchedule.create({
@@ -147,6 +158,23 @@ export const updateAttendanceSchedule = async (req, res, next) => {
     const { weekDay, startTime, endTime } = req.body;
     verifyFields({ weekDay });
 
+    const existingSchedule = await prisma.attendanceSchedule.findFirst({
+      where: { id, storeId: req.store.id },
+    });
+    if (!existingSchedule) {
+      const error = new Error("Horario de tienda no encontrada");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (new Date(endTime).getTime() <= new Date(startTime).getTime()) {
+      const error = new Error(
+        "El horario de salida debe ser mayor al horario de entrada",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
     const verificarHorario = await prisma.attendanceSchedule.findFirst({
       where: {
         weekDay,
@@ -167,25 +195,18 @@ export const updateAttendanceSchedule = async (req, res, next) => {
       );
     }
 
-    if (new Date(endTime).getTime() <= new Date(startTime).getTime()) {
-      const error = new Error(
-        "El horario de salida debe ser mayor al horario de entrada",
-      );
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const updatedAttendanceSchedule = await prisma.attendanceSchedule.create({
+    // FIX: antes se usaba .create, lo que duplicaba el registro en vez de actualizarlo.
+    const updatedAttendanceSchedule = await prisma.attendanceSchedule.update({
+      where: { id },
       data: {
         weekDay,
         startTime,
         endTime,
-        storeId: req.store.id,
         status: ScheduleStatus.Active,
       },
     });
 
-    res.status(201).json({
+    res.status(200).json({
       data: updatedAttendanceSchedule,
       message: "Horario de tienda actualizado correctamente",
     });
@@ -214,8 +235,9 @@ export const deleteAttendanceSchedule = async (req, res, next) => {
     });
 
     res.json({
-      data: deletedStoreCategory,
-      message: "Horairo de atencion eliminado correctamente",
+      // FIX: antes se referenciaba una variable inexistente "deletedStoreCategory"
+      data: deletedAttendanceSchedule,
+      message: "Horario de atención eliminado correctamente",
     });
   } catch (error) {
     next(error);
@@ -227,7 +249,9 @@ export const restoreAttendanceSchedule = async (req, res, next) => {
     const id = parseInt(req.params.id);
     verifyNumberID(id);
 
-    const attendanceSchedule = await prisma.attendanceSchedule.findUnique({
+    // FIX: findUnique no admite storeId en el where (no es un campo único),
+    // se reemplaza por findFirst, igual que en el resto de los controladores.
+    const attendanceSchedule = await prisma.attendanceSchedule.findFirst({
       where: { id, storeId: req.store.id },
     });
     if (!attendanceSchedule) {

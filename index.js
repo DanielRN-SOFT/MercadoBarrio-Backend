@@ -36,7 +36,7 @@ app.use("/api/roles", roleRouter);
 app.use("/api/product-categories", productCategoryRouter);
 app.use("/api/store-categories", storeCategoryRouter);
 app.use("/api/unit-measures", unitOfMeasureRouter);
-app.use("/api/attendance-schedule", attendanceScheduleRouter);
+app.use("/api/attendance-schedules", attendanceScheduleRouter);
 app.use("/api/movements", movementRouter);
 app.use("/api/stores", storeRouter);
 app.use("/api/products", productRouter);

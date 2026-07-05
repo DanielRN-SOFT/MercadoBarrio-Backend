@@ -16,6 +16,10 @@ export const getUsers = async (req, res, next) => {
     const { status, roleId, search } = req.query;
     const where = {};
 
+    where.NOT = {
+      id: req.user.id,
+    };
+
     if (status) {
       // Validar que el valor coincida con el enum, para no pasar basura a Prisma
       if (!Object.values(UserStatus).includes(status)) {

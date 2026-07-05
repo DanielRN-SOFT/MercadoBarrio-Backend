@@ -8,7 +8,7 @@ export const authUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email, status: UserStatus.Active },
       select: {
         id: true,
         name: true,

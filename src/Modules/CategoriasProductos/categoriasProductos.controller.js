@@ -13,9 +13,22 @@ export const getProductCategories = async (req, res, next) => {
     const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
     const skip = (page - 1) * limit;
 
+    const { search, status } = req.query;
+
+    const where = {};
+
+    if (search) {
+      where.name = { contains: search };
+    }
+
+    if (status && Object.values(ProductCategoryStatus).includes(status)) {
+      where.status = status;
+    }
+
     const [total, productCategories] = await Promise.all([
-      prisma.productCategory.count(),
+      prisma.productCategory.count({ where }),
       prisma.productCategory.findMany({
+        where,
         skip,
         take: limit,
         select: {
@@ -23,6 +36,7 @@ export const getProductCategories = async (req, res, next) => {
           name: true,
           status: true,
         },
+        orderBy: { name: "asc" },
       }),
     ]);
 

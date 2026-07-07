@@ -30,7 +30,7 @@ export const getUnitsOfMeasure = async (req, res, next) => {
     }
 
     const [total, unitsOfMeasure] = await Promise.all([
-      prisma.unitOfMeasure.count(),
+      prisma.unitOfMeasure.count({where}),
       prisma.unitOfMeasure.findMany({
         where,
         skip,

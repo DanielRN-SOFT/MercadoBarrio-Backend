@@ -10,9 +10,17 @@ export const getRoles = async (req, res, next) => {
     const limit = parseInt(process.env.PAGINATION_LIMIT) || 10;
     const skip = (page - 1) * limit;
 
+    // Filtros
+    const where = {};
+    const { search } = req.query;
+    if (search) {
+      where.OR = [{ name: { contains: search } }];
+    }
+
     const [total, roles] = await Promise.all([
-      prisma.role.count(),
+      prisma.role.count({where}),
       prisma.role.findMany({
+        where,
         skip,
         take: limit,
         select: { id: true, name: true },

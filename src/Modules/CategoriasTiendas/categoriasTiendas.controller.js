@@ -31,7 +31,7 @@ export const getStoreCategories = async (req, res, next) => {
     }
 
     const [total, storeCategories] = await Promise.all([
-      prisma.storeCategory.count(),
+      prisma.storeCategory.count({where}),
       prisma.storeCategory.findMany({
         where,
         skip,

@@ -2,6 +2,7 @@ import { ProductStatus } from "../../../generated/prisma/index.js";
 import prisma from "../../../prismaClient.js";
 import verifyFields from "../../helpers/verifyStringFields.js";
 import verifyNumberID from "../../helpers/verifyNumberID.js";
+import deleteFile from "../../helpers/deleteFile.js";
 
 export const getProducts = async (req, res, next) => {
   try {
@@ -97,12 +98,13 @@ export const createProduct = async (req, res, next) => {
       description,
       referenceCode,
       lowStockThreshold,
-      photo,
       currentStock,
       productCategoryId,
       unitOfMeasureId,
     } = req.body;
     verifyFields({ name });
+
+    const photo = req.file ? `/uploads/products/${req.file.filename}` : null;
 
     if (price === undefined || isNaN(price) || price < 0) {
       const error = new Error("El precio debe ser un número válido");
@@ -128,8 +130,27 @@ export const createProduct = async (req, res, next) => {
       throw error;
     }
 
+    if (
+      lowStockThreshold !== undefined &&
+      (isNaN(lowStockThreshold) || lowStockThreshold < 0)
+    ) {
+      const error = new Error(
+        "El umbral de stock bajo debe ser un número válido",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Parseo explícito de tipos numéricos (FormData siempre envía strings)
+    const parsedProductCategoryId = parseInt(productCategoryId);
+    const parsedUnitOfMeasureId = parseInt(unitOfMeasureId);
+    const parsedPrice = parseFloat(price);
+    const parsedCurrentStock = parseInt(currentStock);
+    const parsedLowStockThreshold =
+      lowStockThreshold !== undefined ? parseInt(lowStockThreshold) : 5;
+
     const productCategory = await prisma.productCategory.findUnique({
-      where: { id: productCategoryId },
+      where: { id: parsedProductCategoryId },
     });
     if (!productCategory) {
       const error = new Error("La categoría de producto no existe");
@@ -138,7 +159,7 @@ export const createProduct = async (req, res, next) => {
     }
 
     const unitOfMeasure = await prisma.unitOfMeasure.findUnique({
-      where: { id: unitOfMeasureId },
+      where: { id: parsedUnitOfMeasureId },
     });
     if (!unitOfMeasure) {
       const error = new Error("La unidad de medida no existe");
@@ -149,14 +170,14 @@ export const createProduct = async (req, res, next) => {
     const createdProduct = await prisma.product.create({
       data: {
         name,
-        price,
+        price: parsedPrice,
         description,
         referenceCode,
-        lowStockThreshold: lowStockThreshold ?? 5,
+        lowStockThreshold: parsedLowStockThreshold,
         photo,
-        currentStock,
-        productCategoryId,
-        unitOfMeasureId,
+        currentStock: parsedCurrentStock,
+        productCategoryId: parsedProductCategoryId,
+        unitOfMeasureId: parsedUnitOfMeasureId,
         storeId: req.store.id,
         status: ProductStatus.Active,
       },
@@ -182,7 +203,6 @@ export const updateProduct = async (req, res, next) => {
       description,
       referenceCode,
       lowStockThreshold,
-      photo,
       productCategoryId,
       unitOfMeasureId,
     } = req.body;
@@ -190,6 +210,17 @@ export const updateProduct = async (req, res, next) => {
 
     if (price === undefined || isNaN(price) || price < 0) {
       const error = new Error("El precio debe ser un número válido");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (
+      lowStockThreshold !== undefined &&
+      (isNaN(lowStockThreshold) || lowStockThreshold < 0)
+    ) {
+      const error = new Error(
+        "El umbral de stock bajo debe ser un número válido",
+      );
       error.statusCode = 400;
       throw error;
     }
@@ -203,9 +234,29 @@ export const updateProduct = async (req, res, next) => {
       throw error;
     }
 
+    let photo = product.photo;
+    if (req.file) {
+      deleteFile(product.photo);
+      photo = `/uploads/products/${req.file.filename}`;
+    }
+
+    // Parseo explícito de tipos numéricos, con fallback al valor actual
+    // si el campo no vino en el body (evita romper el update si es opcional)
+    const parsedProductCategoryId = productCategoryId
+      ? parseInt(productCategoryId)
+      : product.productCategoryId;
+    const parsedUnitOfMeasureId = unitOfMeasureId
+      ? parseInt(unitOfMeasureId)
+      : product.unitOfMeasureId;
+    const parsedLowStockThreshold =
+      lowStockThreshold !== undefined
+        ? parseInt(lowStockThreshold)
+        : product.lowStockThreshold;
+    const parsedPrice = parseFloat(price);
+
     if (productCategoryId) {
       const productCategory = await prisma.productCategory.findUnique({
-        where: { id: productCategoryId },
+        where: { id: parsedProductCategoryId },
       });
       if (!productCategory) {
         const error = new Error("La categoría de producto no existe");
@@ -216,7 +267,7 @@ export const updateProduct = async (req, res, next) => {
 
     if (unitOfMeasureId) {
       const unitOfMeasure = await prisma.unitOfMeasure.findUnique({
-        where: { id: unitOfMeasureId },
+        where: { id: parsedUnitOfMeasureId },
       });
       if (!unitOfMeasure) {
         const error = new Error("La unidad de medida no existe");
@@ -240,13 +291,13 @@ export const updateProduct = async (req, res, next) => {
       where: { id },
       data: {
         name,
-        price,
+        price: parsedPrice,
         description,
         referenceCode,
-        lowStockThreshold,
+        lowStockThreshold: parsedLowStockThreshold,
         photo,
-        productCategoryId,
-        unitOfMeasureId,
+        productCategoryId: parsedProductCategoryId,
+        unitOfMeasureId: parsedUnitOfMeasureId,
       },
     });
 

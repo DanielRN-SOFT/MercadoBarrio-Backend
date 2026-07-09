@@ -3,6 +3,7 @@ import prisma from "../../../prismaClient.js";
 import verifyFields from "../../helpers/verifyStringFields.js";
 import verifyNumberID from "../../helpers/verifyNumberID.js";
 import { buildStoreWhere, storeSelect } from "../../helpers/storeFilters.js";
+import deleteFile from "../../helpers/deleteFile.js";
 
 export const getStores = async (req, res, next) => {
   try {
@@ -232,11 +233,12 @@ export const createMyStore = async (req, res, next) => {
       latitude,
       description,
       phone,
-      photo,
       storeCategoryId,
     } = req.body;
 
     verifyFields({ name, address, neighborhood });
+
+    const photo = req.file ? `/uploads/stores/${req.file.filename}` : null;
 
     if (!storeCategoryId || isNaN(storeCategoryId)) {
       const error = new Error("La categoría de tienda es obligatoria");
@@ -327,11 +329,16 @@ export const updateMyStore = async (req, res, next) => {
       latitude,
       description,
       phone,
-      photo,
       storeCategoryId,
     } = req.body;
 
     verifyFields({ name, address, neighborhood });
+
+    let photo = store.photo;
+    if (req.file) {
+      deleteFile(store.photo);
+      photo = `/uploads/stores/${req.file.filename}`;
+    }
 
     if (storeCategoryId) {
       const storeCategory = await prisma.storeCategory.findUnique({

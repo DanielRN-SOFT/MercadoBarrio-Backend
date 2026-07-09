@@ -17,6 +17,7 @@ export const authUser = async (req, res, next) => {
         password: true,
         roleId: true,
         role: { select: { name: true } },
+        stores: {select: {name: true}}
       },
     });
 

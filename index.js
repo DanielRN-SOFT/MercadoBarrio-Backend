@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import path from "path";
 dotenv.config();
 import authRouter from "./src/Modules/Auth/auth.routes.js";
 import userRouter from "./src/Modules/Usuarios/usuarios.routes.js";
@@ -30,6 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Rutas
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/auth", authRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/users", userRouter);
@@ -43,7 +45,7 @@ app.use("/api/stores", storeRouter);
 app.use("/api/products", productRouter);
 app.use("/api/sales", saleRouter);
 app.use("/api/sale-details", saleDetailRouter);
-app.use("/api/suppliers", supplierRouter)
+app.use("/api/suppliers", supplierRouter);
 app.use(errorHandler);
 
 // Servidor

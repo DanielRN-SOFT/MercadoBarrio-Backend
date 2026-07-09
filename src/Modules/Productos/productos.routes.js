@@ -11,6 +11,7 @@ import {
   updateThresholdByCategory,
 } from "./productos.controller.js";
 import { attachStore, isGrocer, protect } from "../../middlewares/authMiddleware.js";
+import { uploadProductPhoto } from "../../config/multerConfig.js";
 
 const router = express.Router();
 
@@ -29,8 +30,8 @@ router.put(
 
 router.get("/", protect, isGrocer, attachStore, getProducts);
 router.get("/:id", protect, isGrocer, attachStore, getProductById);
-router.post("/", protect, isGrocer, attachStore, createProduct);
-router.put("/:id", protect, isGrocer, attachStore, updateProduct);
+router.post("/", protect, isGrocer, attachStore, uploadProductPhoto.single("photo"), createProduct);
+router.put("/:id", protect, isGrocer, attachStore, uploadProductPhoto.single("photo"), updateProduct);
 router.put("/delete/:id", protect, isGrocer, attachStore, deleteProduct);
 router.put("/restore/:id", protect, isGrocer, attachStore, restoreProduct);
 

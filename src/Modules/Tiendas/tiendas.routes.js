@@ -13,7 +13,12 @@ import {
   updateMyStore,
   getStoresForMap,
 } from "./tiendas.controller.js";
-import { protect, IsAdmin, isGrocer, attachStore } from "../../middlewares/authMiddleware.js";
+import {
+  protect,
+  IsAdmin,
+  isGrocer,
+  attachStore,
+} from "../../middlewares/authMiddleware.js";
 import { uploadStorePhoto } from "../../config/multerConfig.js";
 
 const router = express.Router();
@@ -25,14 +30,38 @@ router.get("/public/:id", getStorePublicById);
 
 // Rutas del tendero (su propia tienda)
 router.get("/me", protect, isGrocer, getMyStore);
-router.post("/me", protect, isGrocer, createMyStore);
-router.put("/me", protect, isGrocer, updateMyStore);
+router.post(
+  "/me",
+  protect,
+  isGrocer,
+  uploadStorePhoto.single("photo"),
+  createMyStore,
+);
+router.put(
+  "/me",
+  protect,
+  isGrocer,
+  uploadStorePhoto.single("photo"),
+  updateMyStore,
+);
 
 // Rutas admin
 router.get("/", protect, IsAdmin, getStores);
 router.get("/:id", protect, IsAdmin, getStoreById);
-router.post("/", protect, IsAdmin, uploadStorePhoto.single("photo"), createStore);
-router.put("/:id", protect, IsAdmin, uploadStorePhoto.single("photo"), updateStore);
+router.post(
+  "/",
+  protect,
+  IsAdmin,
+  uploadStorePhoto.single("photo"),
+  createStore,
+);
+router.put(
+  "/:id",
+  protect,
+  IsAdmin,
+  uploadStorePhoto.single("photo"),
+  updateStore,
+);
 router.put("/delete/:id", protect, IsAdmin, deleteStore);
 router.put("/restore/:id", protect, IsAdmin, restoreStore);
 

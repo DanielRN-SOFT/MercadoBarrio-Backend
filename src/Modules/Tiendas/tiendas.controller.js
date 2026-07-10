@@ -526,7 +526,13 @@ export const createStore = async (req, res, next) => {
       throw error;
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    // Parseo explícito de tipos numéricos (FormData siempre envía strings)
+    const parsedStoreCategoryId = parseInt(storeCategoryId);
+    const parsedUserId = parseInt(userId);
+    const parsedLongitude = longitude ? parseFloat(longitude) : 0;
+    const parsedLatitude = latitude ? parseFloat(latitude) : 0;
+
+    const user = await prisma.user.findUnique({ where: { id: parsedUserId } });
     if (!user) {
       const error = new Error("El usuario propietario no existe");
       error.statusCode = 404;
@@ -534,7 +540,7 @@ export const createStore = async (req, res, next) => {
     }
 
     const storeCategory = await prisma.storeCategory.findUnique({
-      where: { id: storeCategoryId },
+      where: { id: parsedStoreCategoryId },
     });
     if (!storeCategory) {
       const error = new Error("La categoría de tienda no existe");
@@ -542,7 +548,9 @@ export const createStore = async (req, res, next) => {
       throw error;
     }
 
-    const existingStore = await prisma.store.findFirst({ where: { userId } });
+    const existingStore = await prisma.store.findFirst({
+      where: { userId: parsedUserId },
+    });
     if (existingStore) {
       const error = new Error("Ese usuario ya tiene una tienda asociada");
       error.statusCode = 400;
@@ -554,13 +562,13 @@ export const createStore = async (req, res, next) => {
         name,
         address,
         neighborhood,
-        longitude,
-        latitude,
+        longitude: parsedLongitude,
+        latitude: parsedLatitude,
         description,
         phone,
         photo,
-        storeCategoryId,
-        userId,
+        storeCategoryId: parsedStoreCategoryId,
+        userId: parsedUserId,
         status: StoreStatus.Active,
         onboardingStep: "completed",
       },
@@ -605,9 +613,22 @@ export const updateStore = async (req, res, next) => {
       photo = `/uploads/stores/${req.file.filename}`;
     }
 
+    // Parseo explícito, con fallback al valor actual si el campo no vino
+    const parsedStoreCategoryId = storeCategoryId
+      ? parseInt(storeCategoryId)
+      : store.storeCategoryId;
+    const parsedLongitude =
+      longitude !== undefined && longitude !== ""
+        ? parseFloat(longitude)
+        : store.longitude;
+    const parsedLatitude =
+      latitude !== undefined && latitude !== ""
+        ? parseFloat(latitude)
+        : store.latitude;
+
     if (storeCategoryId) {
       const storeCategory = await prisma.storeCategory.findUnique({
-        where: { id: storeCategoryId },
+        where: { id: parsedStoreCategoryId },
       });
       if (!storeCategory) {
         const error = new Error("La categoría de tienda no existe");
@@ -622,12 +643,12 @@ export const updateStore = async (req, res, next) => {
         name,
         address,
         neighborhood,
-        longitude,
-        latitude,
+        longitude: parsedLongitude,
+        latitude: parsedLatitude,
         description,
         phone,
         photo,
-        storeCategoryId,
+        storeCategoryId: parsedStoreCategoryId,
       },
     });
 

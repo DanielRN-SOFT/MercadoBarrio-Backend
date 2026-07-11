@@ -90,18 +90,150 @@ export const getProductById = async (req, res, next) => {
   }
 };
 
+// RF-46: línea de tiempo consolidada de todo lo que afectó el stock de un
+// producto puntual — une Movimientos (entradas/salidas/ajustes) y Ventas en
+// un solo arreglo ordenado por fecha, para que el propietario audite el
+// historial completo desde el detalle del producto sin saltar entre módulos.
+export const getProductStockTimeline = async (req, res, next) => {
+  try {
+    const productId = parseInt(req.params.id);
+    verifyNumberID(productId);
+
+    const { startDate, endDate } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+
+    // Confirmamos que el producto exista y pertenezca a la tienda del usuario
+    const product = await prisma.product.findFirst({
+      where: { id: productId, storeId: req.store.id },
+      select: { id: true, name: true, currentStock: true },
+    });
+
+    if (!product) {
+      res.status(404);
+      throw new Error("Producto no encontrado");
+    }
+
+    // Mismo patrón de fechas UTC explícito usado en Ventas y Movimientos,
+    // para que el filtro por rango no dependa de la zona horaria del servidor.
+    const dateFilter = {};
+    if (startDate) dateFilter.gte = new Date(`${startDate}T00:00:00.000Z`);
+    if (endDate) dateFilter.lte = new Date(`${endDate}T23:59:59.999Z`);
+    const hasDateFilter = Object.keys(dateFilter).length > 0;
+
+    const [movementDetails, saleDetails] = await Promise.all([
+      prisma.movementDetail.findMany({
+        where: {
+          productId,
+          movement: {
+            storeId: req.store.id,
+            ...(hasDateFilter && { date: dateFilter }),
+          },
+        },
+        select: {
+          id: true,
+          quantity: true,
+          unitCost: true,
+          movement: {
+            select: {
+              id: true,
+              date: true,
+              type: true,
+              status: true,
+              reason: true,
+              cancellationDate: true,
+              supplier: { select: { id: true, name: true } },
+              user: { select: { id: true, name: true } },
+            },
+          },
+        },
+      }),
+      prisma.saleDetail.findMany({
+        where: {
+          productId,
+          sale: {
+            storeId: req.store.id,
+            ...(hasDateFilter && { date: dateFilter }),
+          },
+        },
+        select: {
+          id: true,
+          quantity: true,
+          unitPrice: true,
+          subtotal: true,
+          sale: {
+            select: {
+              id: true,
+              date: true,
+              status: true,
+              cancellationReason: true,
+              cancellationDate: true,
+              user: { select: { id: true, name: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Movimientos de entrada suman stock, de salida/ajuste-salida lo restan
+    const ENTRY_TYPES = ["Entry", "AdjustEntry"];
+
+    const eventosMovimientos = movementDetails.map((md) => ({
+      origen: "Movimiento",
+      id: md.movement.id,
+      date: md.movement.date,
+      tipo: md.movement.type,
+      signo: ENTRY_TYPES.includes(md.movement.type) ? "+" : "-",
+      cantidad: md.quantity,
+      estado: md.movement.status,
+      motivo: md.movement.reason,
+      unitCost: md.unitCost,
+      supplier: md.movement.supplier,
+      usuario: md.movement.user,
+      cancellationDate: md.movement.cancellationDate,
+    }));
+
+    const eventosVentas = saleDetails.map((sd) => ({
+      origen: "Venta",
+      id: sd.sale.id,
+      date: sd.sale.date,
+      tipo: "Venta",
+      signo: "-",
+      cantidad: sd.quantity,
+      estado: sd.sale.status,
+      motivo: sd.sale.cancellationReason,
+      unitPrice: sd.unitPrice,
+      subtotal: sd.subtotal,
+      usuario: sd.sale.user,
+      cancellationDate: sd.sale.cancellationDate,
+    }));
+
+    // Se unen y ordenan por fecha descendente (más reciente primero)
+    const timelineCompleto = [...eventosMovimientos, ...eventosVentas].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+
+    const total = timelineCompleto.length;
+    const skip = (page - 1) * limit;
+    const timelinePaginado = timelineCompleto.slice(skip, skip + limit);
+
+    res.json({
+      data: timelinePaginado,
+      producto: { id: product.id, name: product.name, currentStock: product.currentStock },
+      meta: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createProduct = async (req, res, next) => {
   try {
-    const {
-      name,
-      price,
-      description,
-      referenceCode,
-      lowStockThreshold,
-      currentStock,
-      productCategoryId,
-      unitOfMeasureId,
-    } = req.body;
+    const { name, price, description, referenceCode, lowStockThreshold, currentStock, productCategoryId, unitOfMeasureId } = req.body;
     verifyFields({ name });
 
     const photo = req.file ? `/uploads/products/${req.file.filename}` : null;
@@ -130,13 +262,8 @@ export const createProduct = async (req, res, next) => {
       throw error;
     }
 
-    if (
-      lowStockThreshold !== undefined &&
-      (isNaN(lowStockThreshold) || lowStockThreshold < 0)
-    ) {
-      const error = new Error(
-        "El umbral de stock bajo debe ser un número válido",
-      );
+    if (lowStockThreshold !== undefined && (isNaN(lowStockThreshold) || lowStockThreshold < 0)) {
+      const error = new Error("El umbral de stock bajo debe ser un número válido");
       error.statusCode = 400;
       throw error;
     }
@@ -146,8 +273,7 @@ export const createProduct = async (req, res, next) => {
     const parsedUnitOfMeasureId = parseInt(unitOfMeasureId);
     const parsedPrice = parseFloat(price);
     const parsedCurrentStock = parseInt(currentStock);
-    const parsedLowStockThreshold =
-      lowStockThreshold !== undefined ? parseInt(lowStockThreshold) : 5;
+    const parsedLowStockThreshold = lowStockThreshold !== undefined ? parseInt(lowStockThreshold) : 5;
 
     const productCategory = await prisma.productCategory.findUnique({
       where: { id: parsedProductCategoryId },
@@ -197,15 +323,7 @@ export const updateProduct = async (req, res, next) => {
     const id = parseInt(req.params.id);
     verifyNumberID(id);
 
-    const {
-      name,
-      price,
-      description,
-      referenceCode,
-      lowStockThreshold,
-      productCategoryId,
-      unitOfMeasureId,
-    } = req.body;
+    const { name, price, description, referenceCode, lowStockThreshold, productCategoryId, unitOfMeasureId } = req.body;
     verifyFields({ name });
 
     if (price === undefined || isNaN(price) || price < 0) {
@@ -214,13 +332,8 @@ export const updateProduct = async (req, res, next) => {
       throw error;
     }
 
-    if (
-      lowStockThreshold !== undefined &&
-      (isNaN(lowStockThreshold) || lowStockThreshold < 0)
-    ) {
-      const error = new Error(
-        "El umbral de stock bajo debe ser un número válido",
-      );
+    if (lowStockThreshold !== undefined && (isNaN(lowStockThreshold) || lowStockThreshold < 0)) {
+      const error = new Error("El umbral de stock bajo debe ser un número válido");
       error.statusCode = 400;
       throw error;
     }
@@ -242,16 +355,9 @@ export const updateProduct = async (req, res, next) => {
 
     // Parseo explícito de tipos numéricos, con fallback al valor actual
     // si el campo no vino en el body (evita romper el update si es opcional)
-    const parsedProductCategoryId = productCategoryId
-      ? parseInt(productCategoryId)
-      : product.productCategoryId;
-    const parsedUnitOfMeasureId = unitOfMeasureId
-      ? parseInt(unitOfMeasureId)
-      : product.unitOfMeasureId;
-    const parsedLowStockThreshold =
-      lowStockThreshold !== undefined
-        ? parseInt(lowStockThreshold)
-        : product.lowStockThreshold;
+    const parsedProductCategoryId = productCategoryId ? parseInt(productCategoryId) : product.productCategoryId;
+    const parsedUnitOfMeasureId = unitOfMeasureId ? parseInt(unitOfMeasureId) : product.unitOfMeasureId;
+    const parsedLowStockThreshold = lowStockThreshold !== undefined ? parseInt(lowStockThreshold) : product.lowStockThreshold;
     const parsedPrice = parseFloat(price);
 
     if (productCategoryId) {
@@ -447,9 +553,7 @@ export const getInventoryStatus = async (req, res, next) => {
       { total: 0, criticos: 0, agotados: 0 },
     );
 
-    const filtered = stockStatus
-      ? withStockStatus.filter((p) => p.stockStatus === stockStatus)
-      : withStockStatus;
+    const filtered = stockStatus ? withStockStatus.filter((p) => p.stockStatus === stockStatus) : withStockStatus;
 
     const total = filtered.length;
     const paginated = filtered.slice(skip, skip + limit);
@@ -478,11 +582,7 @@ export const updateThresholdByCategory = async (req, res, next) => {
       throw error;
     }
 
-    if (
-      lowStockThreshold === undefined ||
-      isNaN(lowStockThreshold) ||
-      lowStockThreshold < 0
-    ) {
+    if (lowStockThreshold === undefined || isNaN(lowStockThreshold) || lowStockThreshold < 0) {
       const error = new Error("El umbral debe ser un número válido");
       error.statusCode = 400;
       throw error;

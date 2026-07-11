@@ -1,7 +1,10 @@
 import prisma from "../../../prismaClient.js";
 import verifyFields from "../../helpers/verifyStringFields.js";
 import verifyNumberID from "../../helpers/verifyNumberID.js";
-import { MovementStatus, MovementType } from "../../../generated/prisma/index.js";
+import {
+  MovementStatus,
+  MovementType,
+} from "../../../generated/prisma/index.js";
 import getDateNow from "../../helpers/getDateNow.js";
 import isExistStock from "../../helpers/isExistStock.js";
 import isNumberStock from "../../helpers/isNumberStock.js";
@@ -15,7 +18,9 @@ export const getMovements = async (req, res, next) => {
       const end = new Date(`${endDate}T23:59:59.999Z`);
 
       if (start > end) {
-        const error = new Error("La fecha inicial no puede ser mayor que la fecha final.");
+        const error = new Error(
+          "La fecha inicial no puede ser mayor que la fecha final.",
+        );
         error.statusCode = 400;
         throw error;
       }
@@ -78,7 +83,10 @@ export const getMovements = async (req, res, next) => {
       findManyArgs.take = limit;
     }
 
-    const [total, movements] = await Promise.all([prisma.movement.count({ where }), prisma.movement.findMany(findManyArgs)]);
+    const [total, movements] = await Promise.all([
+      prisma.movement.count({ where }),
+      prisma.movement.findMany(findManyArgs),
+    ]);
 
     res.json({
       data: movements,
@@ -107,6 +115,7 @@ export const getMovementById = async (req, res, next) => {
         date: true,
         status: true,
         type: true,
+        reason: true,
         userId: true,
         storeId: true,
         supplierId: true,
@@ -142,11 +151,18 @@ export const createMovements = async (req, res, next) => {
       throw error;
     }
 
-    const isExitType = [MovementType.Exit, MovementType.AdjustExit].includes(type);
-    const isAdjustType = [MovementType.AdjustEntry, MovementType.AdjustExit].includes(type);
+    const isExitType = [MovementType.Exit, MovementType.AdjustExit].includes(
+      type,
+    );
+    const isAdjustType = [
+      MovementType.AdjustEntry,
+      MovementType.AdjustExit,
+    ].includes(type);
 
     if (isAdjustType && (!reason || !reason.trim())) {
-      const error = new Error("El motivo es obligatorio para los ajustes de inventario");
+      const error = new Error(
+        "El motivo es obligatorio para los ajustes de inventario",
+      );
       error.statusCode = 400;
       throw error;
     }
@@ -174,7 +190,8 @@ export const createMovements = async (req, res, next) => {
       await Promise.all(
         products.map((product) => {
           const { productId, quantity, unitCost } = product;
-          const hasCost = unitCost !== undefined && unitCost !== null && unitCost !== "";
+          const hasCost =
+            unitCost !== undefined && unitCost !== null && unitCost !== "";
           return tx.movementDetail.create({
             data: {
               movementId: createdMovement.id,
@@ -202,7 +219,9 @@ export const createMovements = async (req, res, next) => {
           });
 
           if (result.count === 0) {
-            const error = new Error(`Stock insuficiente para el producto con id ${product.productId}`);
+            const error = new Error(
+              `Stock insuficiente para el producto con id ${product.productId}`,
+            );
             error.statusCode = 400;
             throw error;
           }
@@ -251,7 +270,9 @@ export const cancelMovement = async (req, res, next) => {
       }
 
       // Revertir el efecto en stock (inverso al que se aplico al crear)
-      const isExit = [MovementType.Exit, MovementType.AdjustExit].includes(movement.type);
+      const isExit = [MovementType.Exit, MovementType.AdjustExit].includes(
+        movement.type,
+      );
 
       for (const detail of movement.details) {
         if (isExit) {

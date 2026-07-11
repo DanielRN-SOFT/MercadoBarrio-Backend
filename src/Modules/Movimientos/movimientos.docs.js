@@ -59,7 +59,24 @@
  *           example: 10
  *         unitCost:
  *           type: number
+ *           nullable: true
  *           example: 2500
+ *
+ *     MovementDetailWithProduct:
+ *       description: >
+ *         Detalle de movimiento con el nombre del producto anidado. Se usa
+ *         únicamente en el listado (GET /movements), donde el controller
+ *         incluye product: { select: { name: true } } en cada detalle.
+ *       allOf:
+ *         - $ref: '#/components/schemas/MovementDetail'
+ *         - type: object
+ *           properties:
+ *             product:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   example: Arroz 500g
  *
  *     Movement:
  *       type: object
@@ -94,6 +111,9 @@
  *           nullable: true
  *
  *     MovementWithDetails:
+ *       description: >
+ *         Movimiento con su detalle completo de productos. Usado en la
+ *         respuesta de GET /movements/{id}.
  *       allOf:
  *         - $ref: '#/components/schemas/Movement'
  *         - type: object
@@ -104,6 +124,9 @@
  *                 $ref: '#/components/schemas/MovementDetail'
  *
  *     MovementListItem:
+ *       description: >
+ *         Movimiento tal como aparece en el listado de GET /movements:
+ *         incluye el detalle con nombre de producto y el proveedor completo.
  *       allOf:
  *         - $ref: '#/components/schemas/Movement'
  *         - type: object
@@ -111,7 +134,7 @@
  *             details:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/MovementDetail'
+ *                 $ref: '#/components/schemas/MovementDetailWithProduct'
  *             supplier:
  *               type: object
  *               nullable: true
@@ -175,7 +198,7 @@
  *       type: object
  *       properties:
  *         data:
- *           $ref: '#/components/schemas/Movement'
+ *           $ref: '#/components/schemas/MovementWithDetails'
  *
  *     CreateMovementResponse:
  *       type: object
@@ -201,8 +224,9 @@
  *     summary: Obtiene el listado paginado de movimientos de la tienda
  *     description: >
  *       Retorna los movimientos registrados en la tienda del usuario autenticado,
- *       incluyendo sus detalles y, si aplica, el proveedor asociado. Requiere rol
- *       de tendero.
+ *       incluyendo sus detalles (con el nombre del producto) y, si aplica, el
+ *       proveedor asociado. Admite filtros por rango de fechas, tipo de
+ *       movimiento y producto. Requiere rol de tendero.
  *     tags: [Movements]
  *     security:
  *       - bearerAuth: []
@@ -212,7 +236,37 @@
  *         schema:
  *           type: integer
  *           default: 1
- *         description: Número de página a consultar
+ *         description: Número de página a consultar (se ignora si all=true)
+ *       - in: query
+ *         name: all
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: >
+ *           Si es "true", omite la paginación y retorna todos los resultados
+ *           que coincidan con los filtros. Pensado para exportar a Excel.
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha inicial del rango de búsqueda (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha final del rango de búsqueda (YYYY-MM-DD)
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           $ref: '#/components/schemas/MovementType'
+ *         description: Filtro por tipo de movimiento
+ *       - in: query
+ *         name: productId
+ *         schema:
+ *           type: integer
+ *         description: Filtro por producto involucrado en el movimiento
  *     responses:
  *       200:
  *         description: Listado de movimientos obtenido correctamente
@@ -220,6 +274,12 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/MovementListResponse'
+ *       400:
+ *         description: La fecha inicial (startDate) es mayor que la fecha final (endDate)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MovementError'
  *       401:
  *         description: No autorizado
  *         content:
@@ -246,8 +306,9 @@
  *   get:
  *     summary: Obtiene un movimiento específico por su ID
  *     description: >
- *       Retorna el movimiento solicitado, siempre que pertenezca a la tienda
- *       del usuario autenticado. Requiere rol de tendero.
+ *       Retorna el movimiento solicitado junto con su detalle completo de
+ *       productos, siempre que pertenezca a la tienda del usuario
+ *       autenticado. Requiere rol de tendero.
  *     tags: [Movements]
  *     security:
  *       - bearerAuth: []

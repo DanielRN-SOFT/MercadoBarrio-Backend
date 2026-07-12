@@ -20,7 +20,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n   \r\n    \"email\" : \"grocer@gmail.com\",\r\n    \"password\": \"12345\"\r\n \r\n}",
+              "raw": "{\r\n   \r\n    \"email\" : \"admin@gmail.com\",\r\n    \"password\": \"12345\"\r\n \r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -50,7 +50,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"Felipe\",\r\n    \"email\" : \"daniel20ramirez062@gmail.com\",\r\n    \"password\": \"12345\",\r\n    \"phone\" : \"999999999\"\r\n}",
+              "raw": "{\r\n    \"name\": \"Felipe\",\r\n    \"email\" : \"daniel20ramirez06@gmail.com\",\r\n    \"password\": \"12345\",\r\n    \"phone\" : \"999999999\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1663,7 +1663,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"Nueva tienda\",\r\n    \"address\" : \"si\",\r\n    \"neighborhood\": \"un barrio\",\r\n    \"longitude\": 12,\r\n    \"latitude\": 10,\r\n    \"description\": \"no\",\r\n    \"phone\": \"123456789\",\r\n    \"storeCategoryId\": 2\r\n}",
+              "raw": "{\r\n    \"name\": \"Otra tienda\",\r\n    \"address\" : \"si\",\r\n    \"neighborhood\": \"un barrio\",\r\n    \"longitude\": 12,\r\n    \"latitude\": 10,\r\n    \"description\": \"no\",\r\n    \"phone\": \"123456789\",\r\n    \"storeCategoryId\": 2\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1839,13 +1839,13 @@
               "raw": "{\r\n    \"isVisible\": true\r\n}"
             },
             "url": {
-              "raw": "{{MERCADO_URL}}/stores/2",
+              "raw": "{{MERCADO_URL}}/stores/17",
               "host": [
                 "{{MERCADO_URL}}"
               ],
               "path": [
                 "stores",
-                "2"
+                "17"
               ]
             }
           },
@@ -1904,6 +1904,52 @@
               ],
               "path": [
                 "stores",
+                "17"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ApproveStore",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"panela\",\r\n    \"price\": 8000,\r\n    \"description\": \"yes\",\r\n    \"referenceCode\": \"12012\",\r\n    \"lowStockThreshold\": 5,\r\n    \"currentStock\": 10,\r\n    \"productCategoryId\": 7,\r\n    \"unitOfMeasureId\": 2\r\n}"
+            },
+            "url": {
+              "raw": "{{MERCADO_URL}}/stores/approve/16",
+              "host": [
+                "{{MERCADO_URL}}"
+              ],
+              "path": [
+                "stores",
+                "approve",
+                "16"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "RejectStore",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"panela\",\r\n    \"price\": 8000,\r\n    \"description\": \"yes\",\r\n    \"referenceCode\": \"12012\",\r\n    \"lowStockThreshold\": 5,\r\n    \"currentStock\": 10,\r\n    \"productCategoryId\": 7,\r\n    \"unitOfMeasureId\": 2\r\n}"
+            },
+            "url": {
+              "raw": "{{MERCADO_URL}}/stores/reject/17",
+              "host": [
+                "{{MERCADO_URL}}"
+              ],
+              "path": [
+                "stores",
+                "reject",
                 "17"
               ]
             }

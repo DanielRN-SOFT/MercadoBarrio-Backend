@@ -13,6 +13,8 @@ import {
   updateMyStore,
   updateMyStoreVisibility,
   getStoresForMap,
+  approveStore,
+  rejectStore,
 } from "./tiendas.controller.js";
 import { protect, IsAdmin, isGrocer, attachStore } from "../../middlewares/authMiddleware.js";
 import { uploadStorePhoto } from "../../config/multerConfig.js";
@@ -37,5 +39,7 @@ router.post("/", protect, IsAdmin, uploadStorePhoto.single("photo"), createStore
 router.put("/:id", protect, IsAdmin, uploadStorePhoto.single("photo"), updateStore);
 router.put("/delete/:id", protect, IsAdmin, deleteStore);
 router.put("/restore/:id", protect, IsAdmin, restoreStore);
+router.put("/approve/:id", protect, IsAdmin, approveStore);
+router.put("/reject/:id", protect, IsAdmin, rejectStore);
 
 export default router;

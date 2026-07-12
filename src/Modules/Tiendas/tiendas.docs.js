@@ -1271,3 +1271,125 @@
  *             schema:
  *               $ref: '#/components/schemas/StoreError'
  */
+/**
+ * @swagger
+ * /stores/approve/{id}:
+ *   put:
+ *     summary: Aprueba una tienda pendiente, pasándola a estado Active
+ *     description: >
+ *       Solo puede aplicarse a tiendas en estado Pending. Si la tienda
+ *       está en cualquier otro estado, se rechaza la solicitud. Registra
+ *       el cambio en el log de auditoría. Requiere rol de administrador.
+ *     tags: [Stores]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la tienda a aprobar
+ *     responses:
+ *       200:
+ *         description: Tienda aprobada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreStatusChangeResponse'
+ *       400:
+ *         description: ID inválido, o la tienda no está en estado Pendiente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ *       403:
+ *         description: El usuario no tiene rol de administrador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ *       404:
+ *         description: Tienda no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ */
+
+/**
+ * @swagger
+ * /stores/reject/{id}:
+ *   put:
+ *     summary: Rechaza una tienda pendiente, pasándola a estado Rejected
+ *     description: >
+ *       Solo puede aplicarse a tiendas en estado Pending. Si la tienda
+ *       está en cualquier otro estado, se rechaza la solicitud. Acepta
+ *       un motivo opcional que se guarda en el log de auditoría.
+ *       Requiere rol de administrador.
+ *     tags: [Stores]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la tienda a rechazar
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RejectStoreInput'
+ *     responses:
+ *       200:
+ *         description: Tienda rechazada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreStatusChangeResponse'
+ *       400:
+ *         description: ID inválido, o la tienda no está en estado Pendiente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ *       403:
+ *         description: El usuario no tiene rol de administrador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ *       404:
+ *         description: Tienda no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StoreError'
+ */

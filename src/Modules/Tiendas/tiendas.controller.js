@@ -227,7 +227,16 @@ export const getStoreById = async (req, res, next) => {
 
 export const createMyStore = async (req, res, next) => {
   try {
-    const { name, address, neighborhood, longitude, latitude, description, phone, storeCategoryId } = req.body;
+    const {
+      name,
+      address,
+      neighborhood,
+      longitude,
+      latitude,
+      description,
+      phone,
+      storeCategoryId,
+    } = req.body;
 
     verifyFields({ name, address, neighborhood });
 
@@ -314,7 +323,16 @@ export const updateMyStore = async (req, res, next) => {
       throw error;
     }
 
-    const { name, address, neighborhood, longitude, latitude, description, phone, storeCategoryId } = req.body;
+    const {
+      name,
+      address,
+      neighborhood,
+      longitude,
+      latitude,
+      description,
+      phone,
+      storeCategoryId,
+    } = req.body;
 
     verifyFields({ name, address, neighborhood });
 
@@ -489,7 +507,9 @@ export const updateMyStoreVisibility = async (req, res, next) => {
     const { isVisible } = req.body;
 
     if (typeof isVisible !== "boolean") {
-      const error = new Error("El campo isVisible es obligatorio y debe ser true o false");
+      const error = new Error(
+        "El campo isVisible es obligatorio y debe ser true o false",
+      );
       error.statusCode = 400;
       throw error;
     }
@@ -505,13 +525,17 @@ export const updateMyStoreVisibility = async (req, res, next) => {
     }
 
     if (store.status === StoreStatus.Pending) {
-      const error = new Error("Tu tienda aún está pendiente de aprobación, no puedes cambiar su visibilidad todavía");
+      const error = new Error(
+        "Tu tienda aún está pendiente de aprobación, no puedes cambiar su visibilidad todavía",
+      );
       error.statusCode = 400;
       throw error;
     }
 
     if (store.status !== StoreStatus.Active) {
-      const error = new Error("Tu tienda no está activa en este momento, contacta a soporte para más información");
+      const error = new Error(
+        "Tu tienda no está activa en este momento, contacta a soporte para más información",
+      );
       error.statusCode = 403;
       throw error;
     }
@@ -519,7 +543,9 @@ export const updateMyStoreVisibility = async (req, res, next) => {
     if (store.isVisible === isVisible) {
       res.json({
         data: store,
-        message: isVisible ? "Tu tienda ya es visible en el directorio público" : "Tu tienda ya estaba pausada del directorio público",
+        message: isVisible
+          ? "Tu tienda ya es visible en el directorio público"
+          : "Tu tienda ya estaba pausada del directorio público",
       });
       return;
     }
@@ -558,7 +584,17 @@ export const updateMyStoreVisibility = async (req, res, next) => {
 
 export const createStore = async (req, res, next) => {
   try {
-    const { name, address, neighborhood, longitude, latitude, description, phone, storeCategoryId, userId } = req.body;
+    const {
+      name,
+      address,
+      neighborhood,
+      longitude,
+      latitude,
+      description,
+      phone,
+      storeCategoryId,
+      userId,
+    } = req.body;
 
     verifyFields({ name, address });
 
@@ -624,7 +660,9 @@ export const createStore = async (req, res, next) => {
       },
     });
 
-    res.status(201).json({ data: createdStore, message: "Tienda creada correctamente" });
+    res
+      .status(201)
+      .json({ data: createdStore, message: "Tienda creada correctamente" });
   } catch (error) {
     next(error);
   }
@@ -635,7 +673,16 @@ export const updateStore = async (req, res, next) => {
     const id = parseInt(req.params.id);
     verifyNumberID(id);
 
-    const { name, address, neighborhood, longitude, latitude, description, phone, storeCategoryId } = req.body;
+    const {
+      name,
+      address,
+      neighborhood,
+      longitude,
+      latitude,
+      description,
+      phone,
+      storeCategoryId,
+    } = req.body;
 
     verifyFields({ name, address });
 
@@ -653,9 +700,17 @@ export const updateStore = async (req, res, next) => {
     }
 
     // Parseo explícito, con fallback al valor actual si el campo no vino
-    const parsedStoreCategoryId = storeCategoryId ? parseInt(storeCategoryId) : store.storeCategoryId;
-    const parsedLongitude = longitude !== undefined && longitude !== "" ? parseFloat(longitude) : store.longitude;
-    const parsedLatitude = latitude !== undefined && latitude !== "" ? parseFloat(latitude) : store.latitude;
+    const parsedStoreCategoryId = storeCategoryId
+      ? parseInt(storeCategoryId)
+      : store.storeCategoryId;
+    const parsedLongitude =
+      longitude !== undefined && longitude !== ""
+        ? parseFloat(longitude)
+        : store.longitude;
+    const parsedLatitude =
+      latitude !== undefined && latitude !== ""
+        ? parseFloat(latitude)
+        : store.latitude;
 
     if (storeCategoryId) {
       const storeCategory = await prisma.storeCategory.findUnique({
@@ -684,6 +739,105 @@ export const updateStore = async (req, res, next) => {
     });
 
     res.json({ data: updatedStore, message: "Tienda editada exitosamente" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const approveStore = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    verifyNumberID(id);
+
+    const store = await prisma.store.findUnique({ where: { id } });
+    if (!store) {
+      const error = new Error("Tienda no encontrada");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (store.status !== StoreStatus.Pending) {
+      const error = new Error(
+        "Solo se pueden aprobar tiendas en estado Pendiente",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const updatedStore = await prisma.store.update({
+      where: { id },
+      data: { status: StoreStatus.Active },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        eventActionType: "UPDATE",
+        userId: req.user.id,
+        clientIp: req.ip ?? "unknown",
+        resourceType: "Store",
+        resourceId: store.id,
+        previousValue: JSON.stringify({ status: store.status }),
+        newValue: JSON.stringify({ status: updatedStore.status }),
+        description: "Tienda aprobada por el administrador",
+        status: "Active",
+      },
+    });
+
+    res.json({
+      data: updatedStore,
+      message: "Tienda aprobada correctamente",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectStore = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    verifyNumberID(id);
+
+    const store = await prisma.store.findUnique({ where: { id } });
+    if (!store) {
+      const error = new Error("Tienda no encontrada");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (store.status !== StoreStatus.Pending) {
+      const error = new Error(
+        "Solo se pueden rechazar tiendas en estado Pendiente",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const updatedStore = await prisma.store.update({
+      where: { id },
+      data: { status: StoreStatus.Rejected },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        eventActionType: "UPDATE",
+        userId: req.user.id,
+        clientIp: req.ip ?? "unknown",
+        resourceType: "Store",
+        resourceId: store.id,
+        previousValue: JSON.stringify({ status: store.status }),
+        newValue: JSON.stringify({
+          status: updatedStore.status,
+          reason: null,
+        }),
+        description: "Tienda rechazada por el administrador",
+        status: "Active",
+      },
+    });
+
+    res.json({
+      data: updatedStore,
+      message: "Tienda rechazada correctamente",
+    });
   } catch (error) {
     next(error);
   }
